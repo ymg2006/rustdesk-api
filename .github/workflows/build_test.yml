@@ -23,14 +23,20 @@ on:
         description: 'Set to true to skip pushing to GHCR (default: false)'
         required: false
         default: 'false'
-      WEBCLIENT_SOURCE_LOCATION:
-        description: 'Web Client API Repository'
+      WEBCLIENT_REPOSITORY:
+        description: 'Web client repository in owner/repository format'
         required: true
-        default: 'https://github.com/laiyouxing/rustdesk-api-web'
+        default: 'ymg2006/rustdesk-api-web'
+      WEBCLIENT_REF:
+        description: 'Web client branch, tag, or commit SHA'
+        required: true
+        default: 'Subscribe'
 
 env:
   LATEST_TAG: latest
-  WEBCLIENT_SOURCE_LOCATION: ${{ github.event.inputs.WEBCLIENT_SOURCE_LOCATION || 'https://github.com/laiyouxing/rustdesk-api-web' }}
+  DOCKER_BUILD_RECORD_UPLOAD: 'false'
+  WEBCLIENT_REPOSITORY: ${{ github.event.inputs.WEBCLIENT_REPOSITORY || 'ymg2006/rustdesk-api-web' }}
+  WEBCLIENT_REF: ${{ github.event.inputs.WEBCLIENT_REF || 'Subscribe' }}
   BASE_IMAGE_NAMESPACE: ${{ github.event.inputs.BASE_IMAGE_NAMESPACE || github.actor }}
   DOCKERHUB_IMAGE_NAMESPACE: ${{ github.event.inputs.DOCKERHUB_IMAGE_NAMESPACE || github.actor }}
   GHCR_IMAGE_NAMESPACE: ${{ github.event.inputs.GHCR_IMAGE_NAMESPACE || github.actor }}
@@ -52,21 +58,22 @@ jobs:
           - { platform: "amd64", goos: "windows", file_ext: "zip" }
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - uses: actions/checkout@v4
+      - name: Checkout web client
+        uses: actions/checkout@v7
         with:
-          repository: laiyouxing/rustdesk-api-web
+          repository: ${{ env.WEBCLIENT_REPOSITORY }}
           path: rustdesk-api-web
-          ref: master
+          ref: ${{ env.WEBCLIENT_REF }}
 
       - name: Set up Go environment
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: '1.23'  # 选择 Go 版本
 
       - name: Set up npm
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
 
@@ -102,15 +109,41 @@ jobs:
             zip -r ${{ matrix.job.goos}}-${{ matrix.job.platform }}.${{matrix.job.file_ext}} ./release
           else
             if [ "${{ matrix.job.platform }}" = "arm64" ]; then
-                wget -t 3 --retry-connrefused https://musl.cc/aarch64-linux-musl-cross.tgz || wget -t 3 --retry-connrefused https://more.musl.cc/x86_64-linux-musl/aarch64-linux-musl-cross.tgz
-                tar -xf aarch64-linux-musl-cross.tgz
-                export PATH=$PATH:$PWD/aarch64-linux-musl-cross/bin
-                GOOS=${{ matrix.job.goos }} GOARCH=${{ matrix.job.platform }} CC=aarch64-linux-musl-gcc CGO_LDFLAGS="-static" CGO_ENABLED=1 go build -ldflags "-s -w" -o ./release/apimain ./cmd/apimain.go
+              MUSL_ARCHIVE="aarch64-linux-musl-cross.tgz"
+              MUSL_URL="https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/${MUSL_ARCHIVE}"
+
+              curl --fail --location \
+                --retry 5 \
+                --retry-delay 3 \
+                --retry-all-errors \
+                --connect-timeout 20 \
+                --max-time 300 \
+                --output "${MUSL_ARCHIVE}" \
+                "${MUSL_URL}"
+
+              echo "c909817856d6ceda86aa510894fa3527eac7989f0ef6e87b5721c58737a06c38  ${MUSL_ARCHIVE}" | sha256sum --check
+              tar -xf "${MUSL_ARCHIVE}"
+              export PATH="${PATH}:${PWD}/aarch64-linux-musl-cross/bin"
+
+              GOOS=${{ matrix.job.goos }} GOARCH=arm64 CC=aarch64-linux-musl-gcc CGO_LDFLAGS="-static" CGO_ENABLED=1 go build -ldflags "-s -w" -o ./release/apimain ./cmd/apimain.go
             elif [ "${{ matrix.job.platform }}" = "armv7l" ]; then
-                wget -t 3 --retry-connrefused https://musl.cc/armv7l-linux-musleabihf-cross.tgz || wget -t 3 --retry-connrefused https://more.musl.cc/x86_64-linux-musl/armv7l-linux-musleabihf-cross.tgz
-                tar -xf armv7l-linux-musleabihf-cross.tgz
-                export PATH=$PATH:$PWD/armv7l-linux-musleabihf-cross/bin
-                GOOS=${{ matrix.job.goos }} GOARCH=arm GOARM=7 CC=armv7l-linux-musleabihf-gcc CGO_LDFLAGS="-static" CGO_ENABLED=1 go build -ldflags "-s -w" -o ./release/apimain ./cmd/apimain.go
+              MUSL_ARCHIVE="arm-linux-musleabihf-cross.tgz"
+              MUSL_URL="https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/${MUSL_ARCHIVE}"
+
+              curl --fail --location \
+                --retry 5 \
+                --retry-delay 3 \
+                --retry-all-errors \
+                --connect-timeout 20 \
+                --max-time 300 \
+                --output "${MUSL_ARCHIVE}" \
+                "${MUSL_URL}"
+
+              echo "11e155a090789c854afb5d91e57c81f441ccdb92f7f277789c3a6d5884a68e58  ${MUSL_ARCHIVE}" | sha256sum --check
+              tar -xf "${MUSL_ARCHIVE}"
+              export PATH="${PATH}:${PWD}/arm-linux-musleabihf-cross/bin"
+
+              GOOS=${{ matrix.job.goos }} GOARCH=arm GOARM=7 CC=arm-linux-musleabihf-gcc CGO_LDFLAGS="-static" CGO_ENABLED=1 go build -ldflags "-s -w" -o ./release/apimain ./cmd/apimain.go
             else
               sudo apt-get install musl musl-dev musl-tools -y
               GOOS=${{ matrix.job.goos }} GOARCH=${{ matrix.job.platform }} CC=musl-gcc CGO_LDFLAGS="-static" CGO_ENABLED=1 go build -ldflags "-s -w" -o ./release/apimain ./cmd/apimain.go
@@ -119,7 +152,7 @@ jobs:
           fi
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rustdesk-api-${{ matrix.job.goos }}-${{ matrix.job.platform }}
           path: |
@@ -142,10 +175,10 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v4
 
       - name: Create packaging env
         run: |
@@ -154,7 +187,7 @@ jobs:
           mkdir -p debian-build/${{ matrix.job.platform }}/bin
 
       - name: Download binaries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: rustdesk-api-${{ matrix.job.goos }}-${{ matrix.job.platform }}
           path: .
@@ -165,18 +198,35 @@ jobs:
           cp -ar release ${{ matrix.job.platform }}/release
 
       - name: Build package for ${{ matrix.job.platform }} arch
+        shell: bash
         run: |
-          mv ${{ matrix.job.platform }}/release/apimain debian-build/${{ matrix.job.platform }}/bin/rustdesk-api 
-          mv ${{ matrix.job.platform }}/release/resources/admin resources
-          chmod -v a+x debian-build/${{ matrix.job.platform }}/bin/*
-          mkdir -p data
-          cp -vr debian systemd conf data resources runtime debian-build/${{ matrix.job.platform }}/
-          cat debian/control.tpl | sed 's/{{ ARCH }}/${{ matrix.job.debian_platform }}/' > debian-build/${{ matrix.job.platform }}/debian/control
-          cd debian-build/${{ matrix.job.platform }}/
+          set -euo pipefail
+
+          RELEASE_DIR="${{ matrix.job.platform }}/release"
+          PACKAGE_DIR="debian-build/${{ matrix.job.platform }}"
+
+          test -f "${RELEASE_DIR}/apimain"
+          test -d "${RELEASE_DIR}/resources/admin"
+
+          mkdir -p "${PACKAGE_DIR}/bin" data
+          install -m 0755 "${RELEASE_DIR}/apimain" "${PACKAGE_DIR}/bin/rustdesk-api"
+
+          # Stage the repository packaging files first.
+          cp -a debian systemd conf data resources runtime "${PACKAGE_DIR}/"
+
+          # Replace only the checked-in admin assets with the web client
+          # generated by the matching architecture build artifact.
+          rm -rf "${PACKAGE_DIR}/resources/admin"
+          mkdir -p "${PACKAGE_DIR}/resources/admin"
+          cp -a "${RELEASE_DIR}/resources/admin/." "${PACKAGE_DIR}/resources/admin/"
+
+          sed 's/{{ ARCH }}/${{ matrix.job.debian_platform }}/' debian/control.tpl > "${PACKAGE_DIR}/debian/control"
+
+          cd "${PACKAGE_DIR}"
           debuild -i -us -uc -b -a${{ matrix.job.debian_platform}}
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rustdesk-api-${{ matrix.job.debian_platform }}
           path: |
@@ -189,13 +239,22 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      - name: Download release artifacts (Linux, Windows, and Debian)
+        uses: actions/download-artifact@v7
         with:
+          pattern: 'rustdesk-api-*'
           path: artifacts
+          merge-multiple: false
+
+      - name: Verify Windows release artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f artifacts/rustdesk-api-windows-amd64/windows-amd64.zip
+          echo "Windows artifact ready: artifacts/rustdesk-api-windows-amd64/windows-amd64.zip"
 
       - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: test
           allow_override: true
@@ -219,24 +278,24 @@ jobs:
           - { platform: "armv7l", goos: "linux",  docker_platform: "linux/arm/v7" }
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to Docker Hub
         if: ${{ env.SKIP_DOCKER_HUB == 'false' }}  # Only log in if SKIP_DOCKER_HUB is false
-        uses: docker/login-action@v2
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
 
       - name: Log in to GitHub Container Registry
         if: ${{ env.SKIP_GHCR == 'false' }}  # Only log in if GHCR push is enabled
-        uses: docker/login-action@v2
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -253,12 +312,12 @@ jobs:
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.BASE_IMAGE_NAMESPACE }}/rustdesk-api
 
       - name: Download binaries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: rustdesk-api-${{ matrix.job.goos }}-${{ matrix.job.platform }}
           path: ./
@@ -270,7 +329,7 @@ jobs:
 
       - name: Build and push Docker image to Docker Hub ${{ matrix.job.platform }}
         if: ${{ env.SKIP_DOCKER_HUB == 'false' }}  # Only run this step if SKIP_DOCKER_HUB is false
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: "."
           file: ./Dockerfile
@@ -285,7 +344,7 @@ jobs:
 
       - name: Build and push Docker image to GHCR ${{ matrix.job.platform }}
         if: ${{ env.SKIP_GHCR == 'false' }}  # Only run this step if SKIP_GHCR is false
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: "."
           file: ./Dockerfile
@@ -315,14 +374,14 @@ jobs:
 
       - name: Log in to Docker Hub
         if: ${{ env.SKIP_DOCKER_HUB == 'false' }}  # Only log in if Docker Hub push is enabled
-        uses: docker/login-action@v2
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
 
       - name: Log in to GitHub Container Registry
         if: ${{ env.SKIP_GHCR == 'false' }}  # Only log in if GHCR push is enabled
-        uses: docker/login-action@v2
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
