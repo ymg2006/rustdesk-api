@@ -7,10 +7,10 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/http/response"
-	"github.com/lejianwen/rustdesk-api/v2/model"
-	"github.com/lejianwen/rustdesk-api/v2/model/custom_types"
-	"github.com/lejianwen/rustdesk-api/v2/service"
+	"github.com/ymg2006/rustdesk-api/v2/http/response"
+	"github.com/ymg2006/rustdesk-api/v2/model"
+	"github.com/ymg2006/rustdesk-api/v2/model/custom_types"
+	"github.com/ymg2006/rustdesk-api/v2/service"
 	"gorm.io/gorm"
 	"strconv"
 )

@@ -7,7 +7,7 @@ import (
 
 	"github.com/fvbock/endless"
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/global"
 )
 
 // Run 在类 Unix 平台启动 HTTP 服务。

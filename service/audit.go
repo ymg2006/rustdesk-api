@@ -2,8 +2,8 @@ package service
 
 import (
 	"fmt"
-	"github.com/lejianwen/rustdesk-api/v2/global"
-	"github.com/lejianwen/rustdesk-api/v2/model"
+	"github.com/ymg2006/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/model"
 	"gorm.io/gorm"
 	"strconv"
 	"strings"

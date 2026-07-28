@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/global"
-	"github.com/lejianwen/rustdesk-api/v2/service"
+	"github.com/ymg2006/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/service"
 )
 
 // ProcessMonitorAuth 进程/端口监控上报与配置下发接口的鉴权中间件。

@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/global"
 	"github.com/sirupsen/logrus"
 )
 

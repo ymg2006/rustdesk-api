@@ -1,6 +1,6 @@
 package api
 
-import "github.com/lejianwen/rustdesk-api/v2/model"
+import "github.com/ymg2006/rustdesk-api/v2/model"
 
 /*
 	pub enum UserStatus {

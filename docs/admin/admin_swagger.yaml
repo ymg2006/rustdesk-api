@@ -290,7 +290,7 @@ definitions:
     required:
     - ids
     type: object
-  github_com_lejianwen_rustdesk-api_v2_http_request_admin.Login:
+  github_com_ymg2006_rustdesk-api_v2_http_request_admin.Login:
     properties:
       captcha:
         type: string
@@ -2020,7 +2020,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/github_com_lejianwen_rustdesk-api_v2_http_request_admin.Login'
+          $ref: '#/definitions/github_com_ymg2006_rustdesk-api_v2_http_request_admin.Login'
       produces:
       - application/json
       responses:

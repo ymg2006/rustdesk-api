@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/global"
 )
 
 // Recovery 是一个 panic 恢复中间件，用于替代 gin.Recovery()。

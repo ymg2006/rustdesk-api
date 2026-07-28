@@ -3,7 +3,7 @@ package http
 import (
 	"time"
 
-	"github.com/lejianwen/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/global"
 )
 
 // orDefault 当 v<=0 时返回安全默认值 def，否则返回 v。

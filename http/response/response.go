@@ -3,7 +3,7 @@ package response
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/global"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"net/http"
 )

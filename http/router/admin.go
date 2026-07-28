@@ -2,12 +2,12 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
-	_ "github.com/lejianwen/rustdesk-api/v2/docs/admin"
-	"github.com/lejianwen/rustdesk-api/v2/global"
-	"github.com/lejianwen/rustdesk-api/v2/http/controller/admin"
-	"github.com/lejianwen/rustdesk-api/v2/http/controller/admin/my"
-	apic "github.com/lejianwen/rustdesk-api/v2/http/controller/api"
-	"github.com/lejianwen/rustdesk-api/v2/http/middleware"
+	_ "github.com/ymg2006/rustdesk-api/v2/docs/admin"
+	"github.com/ymg2006/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/http/controller/admin"
+	"github.com/ymg2006/rustdesk-api/v2/http/controller/admin/my"
+	apic "github.com/ymg2006/rustdesk-api/v2/http/controller/api"
+	"github.com/ymg2006/rustdesk-api/v2/http/middleware"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )

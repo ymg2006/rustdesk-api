@@ -10,12 +10,12 @@
 <img src="https://img.shields.io/badge/gin-v1.9.0-lightBlue"/>
 <img src="https://img.shields.io/badge/gorm-v1.25.7-green"/>
 <img src="https://img.shields.io/badge/swag-v1.16.3-yellow"/>
-<img src="https://goreportcard.com/badge/github.com/lejianwen/rustdesk-api/v2"/>
-<img src="https://github.com/lejianwen/rustdesk-api/actions/workflows/build.yml/badge.svg"/>
+<img src="https://goreportcard.com/badge/github.com/ymg2006/rustdesk-api/v2"/>
+<img src="https://github.com/ymg2006/rustdesk-api/actions/workflows/build.yml/badge.svg"/>
 </div>
 
-## 搭配[lejianwen/rustdesk-server]使用更佳。
-> [lejianwen/rustdesk-server]fork自RustDesk Server官方仓库
+## 搭配[ymg2006/rustdesk-server]使用更佳。
+> [ymg2006/rustdesk-server]fork自RustDesk Server官方仓库
 > 1. 解决了使用API链接超时问题
 > 2. 可以强制登录后才能发起链接
 > 3. 支持客户端websocket
@@ -48,7 +48,7 @@
     - 快速使用web client
     - i18n
     - 通过 web client 分享给游客
-    - server控制(一些官方的简单的指令 [WIKI](https://github.com/lejianwen/rustdesk-api/wiki/Rustdesk-Command))
+    - server控制(一些官方的简单的指令 [WIKI](https://github.com/ymg2006/rustdesk-api/wiki/Rustdesk-Command))
 - Web Client
     - 自动获取API server
     - 自动获取ID服务器和KEY
@@ -82,7 +82,7 @@
 
 ### Web Admin:
 
-* 使用前后端分离，提供用户友好的管理界面，主要用来管理和展示。前端代码在[rustdesk-api-web](https://github.com/lejianwen/rustdesk-api-web)
+* 使用前后端分离，提供用户友好的管理界面，主要用来管理和展示。前端代码在[rustdesk-api-web](https://github.com/ymg2006/rustdesk-api-web)
 
 * 后台访问地址是`http://<your server>[:port]/_admin/`
 * 初次安装管理员为用户名为`admin`，密码将在控制台打印，可以通过[命令行](#CLI)更改密码
@@ -118,7 +118,7 @@
       * 可以执行自定义指令
 
  
-11. **LDAP 支持**, 当在API Server上设置了LDAP(已测试AD和LDAP),可以通过LDAP中的用户信息进行登录 https://github.com/lejianwen/rustdesk-api/issues/114 ,如果LDAP验证失败，返回本地用户
+11. **LDAP 支持**, 当在API Server上设置了LDAP(已测试AD和LDAP),可以通过LDAP中的用户信息进行登录 https://github.com/ymg2006/rustdesk-api/issues/114 ,如果LDAP验证失败，返回本地用户
 
 ### Web Client:
 
@@ -200,7 +200,7 @@
 | RUSTDESK_API_PROXY_ENABLE                              | 是否启用代理:`false`, `true`                                                         | `false`                      |
 | RUSTDESK_API_PROXY_HOST                                | 代理地址                                                                           | `http://127.0.0.1:1080`      |
 | ----JWT配置----                                          | --------                                                                       | --------                     |
-| RUSTDESK_API_JWT_KEY                                   | 自定义JWT KEY,为空则不启用JWT<br/>如果没使用`lejianwen/rustdesk-server`中的`MUST_LOGIN`，建议设置为空 |                              |
+| RUSTDESK_API_JWT_KEY                                   | 自定义JWT KEY,为空则不启用JWT<br/>如果没使用`ymg2006/rustdesk-server`中的`MUST_LOGIN`，建议设置为空 |                              |
 | RUSTDESK_API_JWT_EXPIRE_DURATION                       | JWT有效时间                                                                        | `168h`                       |
 
 
@@ -219,20 +219,20 @@
     -e RUSTDESK_API_RUSTDESK_RELAY_SERVER=192.168.1.66:21117 \
     -e RUSTDESK_API_RUSTDESK_API_SERVER=http://192.168.1.66:21114 \
     -e RUSTDESK_API_RUSTDESK_KEY=<key> \
-    lejianwen/rustdesk-api
+    ymg2006/rustdesk-api
     ```
 
-2. 使用`docker compose`，参考[WIKI](https://github.com/lejianwen/rustdesk-api/wiki)
+2. 使用`docker compose`，参考[WIKI](https://github.com/ymg2006/rustdesk-api/wiki)
 
 #### 下载release直接运行
 
-[下载地址](https://github.com/lejianwen/rustdesk-api/releases)
+[下载地址](https://github.com/ymg2006/rustdesk-api/releases)
 
 #### 源码安装
 
 1. 克隆仓库
    ```bash
-   git clone https://github.com/lejianwen/rustdesk-api.git
+   git clone https://github.com/ymg2006/rustdesk-api.git
    cd rustdesk-api
    ```
 
@@ -244,11 +244,11 @@
     go install github.com/swaggo/swag/cmd/swag@latest
     ```
 
-3. 编译后台前端，前端代码在[rustdesk-api-web](https://github.com/lejianwen/rustdesk-api-web)中
+3. 编译后台前端，前端代码在[rustdesk-api-web](https://github.com/ymg2006/rustdesk-api-web)中
    ```bash
    cd resources
    mkdir -p admin
-   git clone https://github.com/lejianwen/rustdesk-api-web
+   git clone https://github.com/ymg2006/rustdesk-api-web
    cd rustdesk-api-web
    npm install
    npm run build
@@ -273,11 +273,11 @@
 6. 打开浏览器访问`http://<your server[:port]>/_admin/`，默认用户名密码为`admin`，请及时更改密码。
 
 
-#### 使用`lejianwen/server-s6`镜像运行
+#### 使用`ymg2006/server-s6`镜像运行
 
 - 已解决链接超时问题
 - 可以强制登录后才能发起链接
-- github https://github.com/lejianwen/rustdesk-server
+- github https://github.com/ymg2006/rustdesk-server
 
 ```yaml
  networks:
@@ -293,7 +293,7 @@
        - 21117:21117
        - 21118:21118
        - 21119:21119
-     image: lejianwen/rustdesk-server-s6:latest
+     image: ymg2006/rustdesk-server-s6:latest
      environment:
        - RELAY=<relay_server[:port]>
        - ENCRYPTED_ONLY=1
@@ -316,8 +316,8 @@
 
 ## 其他
 
-- [WIKI](https://github.com/lejianwen/rustdesk-api/wiki)
-- [链接超时问题](https://github.com/lejianwen/rustdesk-api/issues/92)
+- [WIKI](https://github.com/ymg2006/rustdesk-api/wiki)
+- [链接超时问题](https://github.com/ymg2006/rustdesk-api/issues/92)
 - [修改客户端ID](https://github.com/abdullah-erturk/RustDesk-ID-Changer)
 - [webclient来源](https://hub.docker.com/r/keyurbhole/flutter_web_desk)
 
@@ -326,10 +326,10 @@
 
 感谢所有做过贡献的人!
 
-<a href="https://github.com/lejianwen/rustdesk-api/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=lejianwen/rustdesk-api" />
+<a href="https://github.com/ymg2006/rustdesk-api/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=ymg2006/rustdesk-api" />
 </a>
 
 ## 感谢你的支持！如果这个项目对你有帮助，请点个⭐️鼓励一下，谢谢！
 
-[lejianwen/rustdesk-server]: https://github.com/lejianwen/rustdesk-server
+[ymg2006/rustdesk-server]: https://github.com/ymg2006/rustdesk-server

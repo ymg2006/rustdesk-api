@@ -1,7 +1,7 @@
 # api-server 安全审计与漏洞/bug 修复报告
 
 > 审计人：寇豆码（Kou）／software-engineer
-> 目标：`E:\github\rustdesk-custom\api-server`（模块 `github.com/lejianwen/rustdesk-api/v2`，go 1.23，验证用 Go 1.26.3）
+> 目标：`E:\github\rustdesk-custom\api-server`（模块 `github.com/ymg2006/rustdesk-api/v2`，go 1.23，验证用 Go 1.26.3）
 > 范围：命令注入、路径穿越、鉴权绕过、CORS、JWT、信息泄露、原始 SQL、功能性 bug
 
 ---

@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/http/response"
-	"github.com/lejianwen/rustdesk-api/v2/model"
-	"github.com/lejianwen/rustdesk-api/v2/service"
+	"github.com/ymg2006/rustdesk-api/v2/http/response"
+	"github.com/ymg2006/rustdesk-api/v2/model"
+	"github.com/ymg2006/rustdesk-api/v2/service"
 )
 
 type StationMessage struct {

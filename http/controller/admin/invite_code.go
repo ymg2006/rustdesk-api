@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/http/request/api"
-	"github.com/lejianwen/rustdesk-api/v2/http/response"
-	respApi "github.com/lejianwen/rustdesk-api/v2/http/response/api"
-	"github.com/lejianwen/rustdesk-api/v2/service"
+	"github.com/ymg2006/rustdesk-api/v2/http/request/api"
+	"github.com/ymg2006/rustdesk-api/v2/http/response"
+	respApi "github.com/ymg2006/rustdesk-api/v2/http/response/api"
+	"github.com/ymg2006/rustdesk-api/v2/service"
 )
 
 // AdminInviteCodeController 后台邀请码管理

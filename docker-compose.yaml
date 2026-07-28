@@ -1,6 +1,6 @@
 services:
   rustdesk-api:
-    image: lejianwen/rustdesk-api
+    image: ymg2006/rustdesk-api
     container_name: rustdesk-api
     environment:
       - TZ=Asia/Shanghai

@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/config"
-	"github.com/lejianwen/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/config"
+	"github.com/ymg2006/rustdesk-api/v2/global"
 )
 
 // setupCorsTestRouter 构造一个挂载了 Cors 中间件的 gin 引擎，并注册一个返回 200 的测试 handler。

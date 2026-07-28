@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	"github.com/lejianwen/rustdesk-api/v2/model/custom_types"
+	"github.com/ymg2006/rustdesk-api/v2/model/custom_types"
 )
 
 // ProcessMonitorRule 进程/端口监控规则（后台集中配置，按设备下发到客户端）

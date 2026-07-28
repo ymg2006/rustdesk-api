@@ -4,7 +4,7 @@ package admin
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/http/response"
+	"github.com/ymg2006/rustdesk-api/v2/http/response"
 )
 
 // ServiceRestart 非 Linux 平台不支持在线重启，提示手动重启

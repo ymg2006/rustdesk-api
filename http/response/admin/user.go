@@ -1,6 +1,6 @@
 package admin
 
-import "github.com/lejianwen/rustdesk-api/v2/model"
+import "github.com/ymg2006/rustdesk-api/v2/model"
 
 type LoginPayload struct {
 	Username      string   `json:"username"`

@@ -7,12 +7,12 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/global"
-	"github.com/lejianwen/rustdesk-api/v2/http/request/api"
-	"github.com/lejianwen/rustdesk-api/v2/http/response"
-	respApi "github.com/lejianwen/rustdesk-api/v2/http/response/api"
-	"github.com/lejianwen/rustdesk-api/v2/lib/payverify"
-	"github.com/lejianwen/rustdesk-api/v2/service"
+	"github.com/ymg2006/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/http/request/api"
+	"github.com/ymg2006/rustdesk-api/v2/http/response"
+	respApi "github.com/ymg2006/rustdesk-api/v2/http/response/api"
+	"github.com/ymg2006/rustdesk-api/v2/lib/payverify"
+	"github.com/ymg2006/rustdesk-api/v2/service"
 )
 
 // SubscribeController 订阅控制器
