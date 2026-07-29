@@ -7,27 +7,27 @@ type User struct {
 	Username string `json:"username" gorm:"default:'';not null;uniqueIndex"`
 	Email    string `json:"email" gorm:"default:'';not null;index"`
 	// Email	string     	`json:"email" `
-	Password string     `json:"-" gorm:"default:'';not null;"`
-	Nickname string     `json:"nickname" gorm:"default:'';not null;"`
-	Avatar   string     `json:"avatar" gorm:"default:'';not null;"`
-	GroupId  uint       `json:"group_id" gorm:"default:0;not null;index"`
-	Role     string     `json:"role" gorm:"size:32;default:'user';not null;index"`
-	IsAdmin  *bool      `json:"is_admin" gorm:"default:0;not null;"`
-	Status   StatusCode `json:"status" gorm:"default:1;not null;"`
-	Remark   string     `json:"remark" gorm:"default:'';not null;"`
-	ExpiredAt int64     `json:"expired_at" gorm:"default:0;not null;"` // 账户过期时间戳，0=永不过期
-	// MFA(TOTP) 相关字段：mfa_secret/mfa_recovery 不对外暴露
+	Password  string     `json:"-" gorm:"default:'';not null;"`
+	Nickname  string     `json:"nickname" gorm:"default:'';not null;"`
+	Avatar    string     `json:"avatar" gorm:"default:'';not null;"`
+	GroupId   uint       `json:"group_id" gorm:"default:0;not null;index"`
+	Role      string     `json:"role" gorm:"size:32;default:'user';not null;index"`
+	IsAdmin   *bool      `json:"is_admin" gorm:"default:0;not null;"`
+	Status    StatusCode `json:"status" gorm:"default:1;not null;"`
+	Remark    string     `json:"remark" gorm:"default:'';not null;"`
+	ExpiredAt int64      `json:"expired_at" gorm:"default:0;not null;"` // Account expiration timestamp, 0=never expires
+	// MFA(TOTP) related fields:mfa_secret/mfa_recoverynot exposed to the outside world
 	MfaEnabled  bool   `json:"mfa_enabled" gorm:"default:0;not null;"`
 	MfaSecret   string `json:"-" gorm:"default:'';not null;"`
 	MfaRecovery string `json:"-" gorm:"default:'';not null;"`
-	// SubscriptionPlan 订阅套餐标识，空字符串表示未订阅
+	// SubscriptionPlan Subscription package ID, empty string means not subscribed
 	SubscriptionPlan string `json:"subscription_plan" gorm:"size:32;default:''"`
-	// SubscriptionExpireAt 订阅过期时间，为空表示从未订阅过
+	// SubscriptionExpireAt Subscription expiration time, empty means never subscribed
 	SubscriptionExpireAt *time.Time `json:"subscription_expire_at" gorm:"default:null"`
 	TimeModel
 }
 
-// SubscriptionStatus 返回订阅状态：active / expired / none / permanent
+// SubscriptionStatus returns subscription status: active / expired / none / permanent
 func (u *User) SubscriptionStatus() string {
 	if u.SubscriptionExpireAt == nil {
 		return "none"
@@ -41,13 +41,13 @@ func (u *User) SubscriptionStatus() string {
 	return "active"
 }
 
-// IsSubscriptionActive 订阅是否有效（永久 = true，过期 = false，从未订阅 = false）
+// IsSubscriptionActive Whether the subscription is valid (permanent = true, expired = false, never subscribed = false)
 func (u *User) IsSubscriptionActive() bool {
 	status := u.SubscriptionStatus()
 	return status == "active" || status == "permanent"
 }
 
-// SubscriptionDaysLeft 返回订阅剩余天数；永久返回 -1
+// SubscriptionDaysLeft returns the remaining days of the subscription; permanently returns -1
 func (u *User) SubscriptionDaysLeft() int {
 	if u.SubscriptionExpireAt == nil {
 		return 0
@@ -66,9 +66,9 @@ func (u *User) SubscriptionDaysLeft() int {
 	return days
 }
 
-// BeforeSave 钩子用于确保 email 字段有合理的默认值
+// The BeforeSave hook is used to ensure that the email field has a reasonable default value
 //func (u *User) BeforeSave(tx *gorm.DB) (err error) {
-//	// 如果 email 为空，设置为默认值
+//	// If email is empty, set it to the default value
 //	if u.Email == "" {
 //		u.Email = fmt.Sprintf("%s@example.com", u.Username)
 //	}

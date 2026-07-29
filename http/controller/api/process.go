@@ -12,20 +12,20 @@ import (
 
 type Process struct{}
 
-// ProcessStatus 客户端上报监控状态（需 Bearer 鉴权，见 RustAuth 中间件）
-// @Tags 进程监控
-// @Summary 上报进程/端口监控状态
-// @Description 客户端定时上报各监控项是否运行；响应回带该设备最新监控配置（后台集中下发）
+// ProcessStatus client reports monitoring status (requires Bearer authentication, see RustAuth middleware)
+// @Tags process monitoring
+// @Summary reports process/port monitoring status
+// @Description The client regularly reports whether each monitoring item is running; the response brings back the latest monitoring configuration of the device (centralized delivery in the background)
 // @Accept  json
 // @Produce  json
-// @Param body body api.ProcessStatusForm true "上报状态"
+// @Param body body api.ProcessStatusForm true "Report status"
 // @Success 200 {object} response.Response
 // @Router /process/status [post]
 // @Security token
 func (p *Process) ProcessStatus(c *gin.Context) {
 	f := &requstform.ProcessStatusForm{}
 	if err := c.ShouldBindJSON(f); err != nil || f.PeerId == "" {
-		response.Fail(c, 101, "参数错误")
+		response.Fail(c, 101, response.TranslateMsg(c, "ParamError"))
 		return
 	}
 	now := time.Now().Unix()
@@ -38,31 +38,31 @@ func (p *Process) ProcessStatus(c *gin.Context) {
 	response.Success(c, gin.H{"rules": toRuleOut(service.AllService.ProcessMonitorService.RulesByPeer(f.PeerId))})
 }
 
-// ProcessConfig 客户端拉取自己的监控配置（需 Bearer 鉴权）
-// @Tags 进程监控
-// @Summary 获取设备监控配置
+// ProcessConfig client pulls its own monitoring configuration (Bearer authentication required)
+// @Tags process monitoring
+// @Summary Get device monitoring configuration
 // @Produce  json
-// @Param peer_id query string true "设备 peer id"
+// @Param peer_id query string true "device peer id"
 // @Success 200 {object} response.Response
 // @Router /process/config [get]
 // @Security token
 func (p *Process) ProcessConfig(c *gin.Context) {
 	peerId := c.Query("peer_id")
 	if peerId == "" {
-		response.Fail(c, 101, "peer_id 不能为空")
+		response.Fail(c, 101, response.TranslateParamMsg(c, "FieldRequired", "peer_id"))
 		return
 	}
 	response.Success(c, gin.H{"rules": toRuleOut(service.AllService.ProcessMonitorService.RulesByPeer(peerId))})
 }
 
-// toRuleOut 转换为下发给客户端的精简结构
+// toRuleOut is converted into a streamlined structure sent to the client.
 func toRuleOut(rules []model.ProcessMonitorRule) []gin.H {
 	out := make([]gin.H, 0, len(rules))
 	for _, r := range rules {
 		out = append(out, gin.H{
-			"name":    r.Name,
-			"type":    r.Type,
-			"target":  r.Target,
+			"name":     r.Name,
+			"type":     r.Type,
+			"target":   r.Target,
 			"interval": r.Interval,
 		})
 	}

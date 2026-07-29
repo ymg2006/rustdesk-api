@@ -16,10 +16,10 @@ import (
 
 type NotifyService struct{}
 
-// SendStationMessage 发送站内离线消息
-// 参数:
+// SendStationMessage Send offline messages within the station
+// parameter:
 //
-//	receiverId: 接收者用户ID，0=不限制(系统消息)，>0=仅该用户可见
+//	receiverId: receiver user ID, 0=no restriction (system message), >0=visible only to this user
 func (s *NotifyService) SendStationMessage(receiverId uint, title, content, peerId string) {
 	if title == "" && content == "" {
 		return
@@ -38,7 +38,7 @@ func (s *NotifyService) SendStationMessage(receiverId uint, title, content, peer
 }
 
 func (s *NotifyService) SendByConfig(cfg *model.AlertConfig, title, content string) {
-	// 从通道表获取具体配置
+	// Get specific configuration from channel table
 	ch := &model.AlertChannel{}
 	DB.Where("row_id = ?", cfg.ChannelId).First(ch)
 	if ch.RowId == 0 {
@@ -50,26 +50,30 @@ func (s *NotifyService) SendByConfig(cfg *model.AlertConfig, title, content stri
 	case "dingtalk":
 		_ = s.sendDingTalk(ch.WebhookUrl, title, content)
 	case "smtp":
-		// 接收人来自告警规则（发送配置），而非通道
+		// The recipient comes from the alert rule (sending configuration), not the channel
 		_ = s.sendSmtpWithChannel(ch, cfg.Recipients, title, content)
 	}
 }
 
 func (s *NotifyService) sendWecom(webhook, title, content string) error {
-	body := fmt.Sprintf(`{"msgtype":"markdown","markdown":{"content":"## ⚠️ 设备离线告警\n**%s**\n%s"}}`, title, content)
+	body := fmt.Sprintf(`{"msgtype":"markdown","markdown":{"content":"## Device offline alert
+**%s**
+%s"}}`, title, content)
 	return s.postJson(webhook, body)
 }
 
 func (s *NotifyService) sendDingTalk(webhook, title, content string) error {
-	body := fmt.Sprintf(`{"msgtype":"text","text":{"content":"⚠️ 设备离线告警\n%s\n%s"}}`, title, content)
+	body := fmt.Sprintf(`{"msgtype":"text","text":{"content":"Device offline alert
+%s
+%s"}}`, title, content)
 	return s.postJson(webhook, body)
 }
 
-// sendSmtpWithChannel 支持 465（SMTPS/TLS）和 587（STARTTLS）两种端口
-// recipients: 收件人邮箱列表（逗号分隔），来自告警规则的“接收人”配置
+// sendSmtpWithChannel supports two ports: 465 (SMTPS/TLS) and 587 (STARTTLS).
+// recipients: list of recipients' email addresses (comma separated), from the "recipients" configuration of the alert rule
 func (s *NotifyService) sendSmtpWithChannel(ch *model.AlertChannel, recipientsStr, title, content string) error {
 	if ch.SmtpHost == "" || recipientsStr == "" {
-		return fmt.Errorf("SMTP 主机或收件人为空")
+		return fmt.Errorf("SMTP host or recipient is empty")
 	}
 	addr := net.JoinHostPort(ch.SmtpHost, fmt.Sprintf("%d", ch.SmtpPort))
 	auth := smtp.PlainAuth("", ch.SmtpUser, ch.SmtpPass, ch.SmtpHost)
@@ -88,56 +92,56 @@ func (s *NotifyService) sendSmtpWithChannel(ch *model.AlertChannel, recipientsSt
 	deliver := func(client *smtp.Client) error {
 		defer client.Close()
 		if err := client.Auth(auth); err != nil {
-			return fmt.Errorf("SMTP 认证失败: %w", err)
+			return fmt.Errorf("SMTP authentication failed:%w", err)
 		}
 		if err := client.Mail(ch.SmtpUser); err != nil {
-			return fmt.Errorf("SMTP MAIL FROM 失败: %w", err)
+			return fmt.Errorf("SMTP MAIL FROM failed:%w", err)
 		}
 		for _, to := range recipients {
 			if err := client.Rcpt(to); err != nil {
-				return fmt.Errorf("SMTP RCPT 失败(%s): %w", to, err)
+				return fmt.Errorf("SMTP RCPT failed (%s):%w", to, err)
 			}
 		}
 		w, err := client.Data()
 		if err != nil {
-			return fmt.Errorf("SMTP DATA 失败: %w", err)
+			return fmt.Errorf("SMTP DATA failed:%w", err)
 		}
 		if _, err := io.Copy(w, strings.NewReader(msg)); err != nil {
-			return fmt.Errorf("SMTP 写入正文失败: %w", err)
+			return fmt.Errorf("SMTP writing body failed:%w", err)
 		}
 		if err := w.Close(); err != nil {
-			return fmt.Errorf("SMTP 关闭正文失败: %w", err)
+			return fmt.Errorf("SMTP close body failed:%w", err)
 		}
 		return nil
 	}
 
 	if ch.SmtpPort == 587 {
-		// STARTTLS: 先明文连接，再升级到 TLS
+		// STARTTLS: connect in clear text first, then upgrade to TLS
 		conn, err := net.DialTimeout("tcp", addr, 10*time.Second)
 		if err != nil {
-			return fmt.Errorf("SMTP 连接失败: %w", err)
+			return fmt.Errorf("SMTP connection failed:%w", err)
 		}
 		client, err := smtp.NewClient(conn, ch.SmtpHost)
 		if err != nil {
 			conn.Close()
-			return fmt.Errorf("SMTP 客户端创建失败: %w", err)
+			return fmt.Errorf("SMTP client creation failed:%w", err)
 		}
 		if err = client.StartTLS(tlsConfig); err != nil {
 			client.Close()
 			conn.Close()
-			return fmt.Errorf("SMTP STARTTLS 失败: %w", err)
+			return fmt.Errorf("SMTP STARTTLS failed:%w", err)
 		}
 		return deliver(client)
 	}
-	// 默认 465 SMTPS: 直接 TLS 连接
+	// Default 465 SMTPS: direct TLS connection
 	conn, err := tls.Dial("tcp", addr, tlsConfig)
 	if err != nil {
-		return fmt.Errorf("SMTP TLS 连接失败: %w", err)
+		return fmt.Errorf("SMTP TLS connection failed:%w", err)
 	}
 	client, err := smtp.NewClient(conn, ch.SmtpHost)
 	if err != nil {
 		conn.Close()
-		return fmt.Errorf("SMTP 客户端创建失败: %w", err)
+		return fmt.Errorf("SMTP client creation failed:%w", err)
 	}
 	return deliver(client)
 }
@@ -193,17 +197,17 @@ func buildEmailHTML(title, content string) string {
 			%s
 		</table>
 		<div style="text-align:center; padding:16px; color:#aaa; font-size:12px; border-top:1px solid #eee;">
-			此邮件由 RustDesk 告警系统自动发送
+			This email was sent automatically by the RustDesk alert system.
 		</div>
 	</div>
 </body>
 </html>`, title, rows.String())
 }
 
-// TestChannel 向指定通道发送一条测试消息，返回发送结果错误（nil 表示成功）
+// TestChannel sends a test message to the specified channel and returns a sending result error (nil indicates success)
 func (s *NotifyService) TestChannel(ch *model.AlertChannel, recipients string) error {
-	const title = "RustDesk 告警通道测试"
-	const content = "这是一条来自 RustDesk 告警系统的测试消息，如果您收到说明配置正确。"
+	const title = "RustDesk Alert Channel Test"
+	const content = "This is a test message from the RustDesk alert system, if you receive it it means the configuration is correct."
 	switch ch.Channel {
 	case "wecom":
 		return s.sendWecom(ch.WebhookUrl, title, content)
@@ -211,10 +215,10 @@ func (s *NotifyService) TestChannel(ch *model.AlertChannel, recipients string) e
 		return s.sendDingTalk(ch.WebhookUrl, title, content)
 	case "smtp":
 		if recipients == "" {
-			recipients = ch.SmtpUser // 默认发给自己
+			recipients = ch.SmtpUser // Send to yourself by default
 		}
 		return s.sendSmtpWithChannel(ch, recipients, title, content)
 	default:
-		return fmt.Errorf("不支持的通道类型: %s", ch.Channel)
+		return fmt.Errorf("Unsupported channel type:%s", ch.Channel)
 	}
 }

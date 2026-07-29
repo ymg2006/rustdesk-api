@@ -8,7 +8,7 @@ import (
 
 type ClientDownload struct{}
 
-// List 获取启用的客户端下载列表（公开）
+// List Gets the enabled client download list (public)
 func (v *ClientDownload) List(c *gin.Context) {
 	list := service.AllService.ClientDownloadService.ActiveList()
 	response.Success(c, gin.H{

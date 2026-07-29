@@ -1,14 +1,15 @@
 package router
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	_ "github.com/ymg2006/rustdesk-api/v2/docs/api"
 	"github.com/ymg2006/rustdesk-api/v2/global"
 	"github.com/ymg2006/rustdesk-api/v2/http/controller/api"
 	"github.com/ymg2006/rustdesk-api/v2/http/middleware"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
-	"net/http"
 )
 
 func ApiInit(g *gin.Engine) {
@@ -18,7 +19,7 @@ func ApiInit(g *gin.Engine) {
 	if global.Config.App.ShowSwagger == 1 {
 		g.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.InstanceName("api")))
 	}
-	// 加载 HTML 模板
+	// Load HTML templates.
 	g.LoadHTMLGlob("resources/templates/*")
 
 	frg := g.Group("/api")
@@ -27,14 +28,14 @@ func ApiInit(g *gin.Engine) {
 		i := &api.Index{}
 		frg.GET("/", i.Index)
 		frg.GET("/version", i.Version)
-		frg.GET("/server/info", i.ServerInfo)
+		frg.GET("/admin/server/info", i.ServerInfo)
 
 		frg.POST("/heartbeat", i.Heartbeat)
 	}
 
 	{
 		l := &api.Login{}
-		// 如果返回oidc则可以通过oidc登录
+		// If OIDC is returned, users can log in with OIDC.
 		frg.GET("/login-options", l.LoginOptions)
 		frg.POST("/login", middleware.Limiter(), l.Login)
 
@@ -57,7 +58,7 @@ func ApiInit(g *gin.Engine) {
 	}
 	{
 		pe := &api.Peer{}
-		//提交系统信息
+		// Submit system information.
 		frg.POST("/sysinfo", pe.SysInfo)
 		frg.POST("/sysinfo_ver", pe.SysInfoVer)
 	}
@@ -72,7 +73,7 @@ func ApiInit(g *gin.Engine) {
 		frg.GET("/client-downloads", cd.List)
 	}
 
-	// 用户端下载页面
+	// User-facing download page.
 	g.GET("/downloads", func(c *gin.Context) {
 		c.HTML(200, "client_downloads.html", gin.H{})
 	})
@@ -89,15 +90,15 @@ func ApiInit(g *gin.Engine) {
 		frg.POST("/audit/file", au.AuditFile)
 	}
 
-	// 进程/端口监控：客户端上报状态 + 拉取下发配置
-	// 允许未登录（无 token）设备上报；已登录设备仍验证 token
+	// Process/port monitoring: clients report status and fetch delivered configuration.
+	// Unauthenticated devices without tokens can report; authenticated devices still verify tokens.
 	{
 		pm := &api.Process{}
 		frg.POST("/process/status", middleware.ProcessMonitorAuth(), pm.ProcessStatus)
 		frg.GET("/process/config", middleware.ProcessMonitorAuth(), pm.ProcessConfig)
 	}
 
-	// 订阅支付回调（公开）
+	// Subscription payment callbacks (public).
 	{
 		sc := &api.SubscribeController{}
 		frg.POST("/subscribe/notify", sc.Notify)
@@ -108,7 +109,7 @@ func ApiInit(g *gin.Engine) {
 
 	{
 		an := &api.Announcement{}
-		// 公告（无需登录）
+		// Announcements (no login required).
 		frg.GET("/announcements", an.List)
 	}
 
@@ -132,15 +133,15 @@ func ApiInit(g *gin.Engine) {
 
 	{
 		ab := &api.Ab{}
-		//获取地址
+		// Get address book.
 		frg.GET("/ab", ab.Ab)
-		//更新地址
+		// Update address book.
 		frg.POST("/ab", ab.UpAb)
 	}
 
 	PersonalRoutes(frg)
 
-	// 爱发电订阅支付（需登录）
+	// Subscription payment endpoints (login required).
 	{
 		sc := &api.SubscribeController{}
 		frg.POST("/subscribe/create-order", sc.CreateOrder)
@@ -150,11 +151,11 @@ func ApiInit(g *gin.Engine) {
 		frg.GET("/subscribe/mine", sc.Mine)
 	}
 
-	// 进程/端口监控路由已移至 RustAuth 之前（见下方），以支持未登录设备上报
+	// Process/port monitoring routes were moved before RustAuth to support unauthenticated device reports.
 
-	//访问静态文件
+	// Serve static files.
 	g.StaticFS("/upload", http.Dir(global.Config.Gin.ResourcesPath+"/public/upload"))
-	// 码支付收款码图片（resources/static/qr/）
+	// QR-code payment images (resources/static/qr/).
 	g.StaticFS("/static/qr", http.Dir(global.Config.Gin.ResourcesPath+"/static/qr"))
 }
 

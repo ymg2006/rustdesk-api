@@ -2,10 +2,11 @@ package response
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/ymg2006/rustdesk-api/v2/global"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/ymg2006/rustdesk-api/v2/global"
 )
 
 type Response struct {
@@ -38,19 +39,19 @@ func Success(c *gin.Context, data interface{}) {
 	SendResponse(c, 0, "success", data)
 }
 
-// Fail 返回失败响应（HTTP 200 + JSON 体中携带业务 code/message/data，与全站约定一致）。
+// Fail returns a failure response using the site-wide convention: HTTP 200 with business code/message/data in JSON.
 //
-// 安全收口（统一 500 错误响应）：当 code >= 500（服务端错误）时，无论调用方传入何种
-// message，一律不向客户端回显内部错误细节（可能包含 SQL、表名、文件路径、堆栈等敏感信息），
-// 仅返回统一通用文案 "服务器内部错误"，并把调用方传入的原始 message 仅记录到服务端日志，
-// 以便排障。4xx 等客户端错误仍按原样透传 message（如参数校验提示）。
+// Security hardening for unified 500 responses: when code >= 500, never echo internal error details
+// to clients, regardless of the caller-provided message. Such details may include SQL, table names,
+// file paths, stack traces, or other sensitive information. Return only a generic message and log the
+// original message server-side for troubleshooting. Client errors such as 4xx still pass messages through.
 func Fail(c *gin.Context, code int, message string) {
 	if code >= 500 {
 		if message != "" {
-			// 仅记录到服务端日志，绝不给客户端回显。
+			// Log only on the server side; never echo it to clients.
 			global.Logger.Error("server error response suppressed for client: " + message)
 		}
-		message = "服务器内部错误"
+		message = TranslateMsg(c, "ServerInternalError")
 	}
 	SendResponse(c, code, message, nil)
 }
@@ -61,9 +62,9 @@ func Error(c *gin.Context, message string) {
 	})
 }
 
-// ServerError 以统一通用 5xx 包络返回（HTTP 200 + 业务 code 500 + message），
-// 避免向客户端泄露内部错误细节（如 SQL、堆栈信息）。
-// 供控制器在捕获到非预期的服务端错误时调用，替代直接把 err.Error() 回显给客户端。
+// ServerError returns the generic 5xx envelope (HTTP 200 + business code 500 + message).
+// It avoids leaking internal details such as SQL or stack traces. Controllers should use it for
+// unexpected server-side errors instead of returning err.Error() directly to clients.
 func ServerError(c *gin.Context) {
 	Fail(c, 500, "")
 }

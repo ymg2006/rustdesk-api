@@ -1,25 +1,25 @@
 package api
 
-// CreateOrderReq 创建订单请求
+// CreateOrderReq is the create-order request.
 type CreateOrderReq struct {
-	Channel string `json:"channel" binding:"required,oneof=wechat alipay"` // 支付渠道
-	// PlanKey 时长选项 key（1m / 3m / 6m / 12m），服务端根据 key 查价
+	Channel string `json:"channel" binding:"required,oneof=wechat alipay"` // payment channel
+	// PlanKey is the duration option key (1m / 3m / 6m / 12m). The server uses it to look up pricing.
 	PlanKey string `json:"plan_key" binding:"required,max=16"`
 }
 
-// ClaimReq 订单号认领请求
+// ClaimReq is the order-number claim request.
 type ClaimReq struct {
-	OutTradeNo string `json:"out_trade_no" binding:"required,max=64"` // 商户订单号
+	OutTradeNo string `json:"out_trade_no" binding:"required,max=64"` // merchant order number
 }
 
-// RedeemReq 兑换邀请码请求
+// RedeemReq is the invite-code redemption request.
 type RedeemReq struct {
-	Code string `json:"code" binding:"required,max=64"` // 邀请码
+	Code string `json:"code" binding:"required,max=64"` // invite code
 }
 
-// AdminCreateCodeReq 后台手动生成邀请码请求
+// AdminCreateCodeReq is the admin request to manually generate invite codes.
 type AdminCreateCodeReq struct {
-	Plan       string `json:"plan"`        // 套餐标识，缺省 "pro"
-	ExpireDays int    `json:"expire_days"` // 有效天数，缺省 30
-	Remark     string `json:"remark"`      // 管理员备注
+	Plan       string `json:"plan"`        // plan identifier, defaults to "pro"
+	ExpireDays int    `json:"expire_days"` // validity period in days, defaults to 30
+	Remark     string `json:"remark"`      // admin remark
 }

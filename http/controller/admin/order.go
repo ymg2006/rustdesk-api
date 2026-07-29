@@ -13,18 +13,18 @@ import (
 	"github.com/ymg2006/rustdesk-api/v2/service"
 )
 
-// OrderCtl 后台订单管理
+// OrderCtl background order management
 type OrderCtl struct{}
 
-// NewOrderCtl 创建控制器
+// NewOrderCtl creates a controller
 func NewOrderCtl() *OrderCtl {
 	return &OrderCtl{}
 }
 
-// List 订单列表
+// List order list
 func (oc *OrderCtl) List(c *gin.Context) {
-	status := c.Query("status")       // pending / paid / closed
-	keyword := c.Query("keyword")      // 按订单号或用户名搜索
+	status := c.Query("status")   // pending / paid / closed
+	keyword := c.Query("keyword") // Search by order number or username
 	pageStr := c.Query("page")
 	pageSizeStr := c.Query("size")
 
@@ -39,12 +39,12 @@ func (oc *OrderCtl) List(c *gin.Context) {
 
 	db := service.AllService.SubscribeService.Db().Model(&model.PayOrder{})
 
-	// 状态筛选
+	// status filter
 	if status != "" {
 		db = db.Where("status = ?", status)
 	}
 
-	// 关键词搜索
+	// keyword search
 	if keyword != "" {
 		db = db.Where("out_trade_no LIKE ? OR user_id IN (SELECT id FROM users WHERE username LIKE ?)",
 			"%"+keyword+"%", "%"+keyword+"%")
@@ -105,12 +105,12 @@ func (oc *OrderCtl) List(c *gin.Context) {
 	})
 }
 
-// Detail 订单详情
+// Detail order details
 func (oc *OrderCtl) Detail(c *gin.Context) {
 	idStr := c.Param("id")
 	id, _ := strconv.ParseUint(idStr, 10, 64)
 	if id == 0 {
-		response.Fail(c, 400, "invalid id")
+		response.Fail(c, 400, response.TranslateMsg(c, "InvalidId"))
 		return
 	}
 
@@ -123,12 +123,12 @@ func (oc *OrderCtl) Detail(c *gin.Context) {
 	response.Success(c, order)
 }
 
-// Confirm 手动确认到账（将 pending 订单标记为 paid）
+// Confirm Manually confirm the arrival (mark the pending order as paid)
 func (oc *OrderCtl) Confirm(c *gin.Context) {
 	idStr := c.Param("id")
 	id, _ := strconv.ParseUint(idStr, 10, 64)
 	if id == 0 {
-		response.Fail(c, 400, "invalid id")
+		response.Fail(c, 400, response.TranslateMsg(c, "InvalidId"))
 		return
 	}
 
@@ -143,7 +143,7 @@ func (oc *OrderCtl) Confirm(c *gin.Context) {
 		return
 	}
 
-	// 构造回调参数调 HandleNotify（带上签名，否则验签失败）
+	// Construct callback parameters to call HandleNotify (bring signature, otherwise signature verification fails)
 	params := map[string]string{
 		"out_trade_no": order.OutTradeNo,
 		"trade_status": "TRADE_SUCCESS",
@@ -161,12 +161,12 @@ func (oc *OrderCtl) Confirm(c *gin.Context) {
 	response.Success(c, nil)
 }
 
-// Close 关闭订单
+// Close close order
 func (oc *OrderCtl) Close(c *gin.Context) {
 	idStr := c.Param("id")
 	id, _ := strconv.ParseUint(idStr, 10, 64)
 	if id == 0 {
-		response.Fail(c, 400, "invalid id")
+		response.Fail(c, 400, response.TranslateMsg(c, "InvalidId"))
 		return
 	}
 

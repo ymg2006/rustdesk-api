@@ -23,16 +23,16 @@ func (ct *AlertChannel) List(c *gin.Context) {
 func (ct *AlertChannel) Create(c *gin.Context) {
 	f := &model.AlertChannel{}
 	if err := c.ShouldBindJSON(f); err != nil {
-		response.Fail(c, 101, "参数错误")
+		response.Fail(c, 101, response.TranslateMsg(c, "ParamError"))
 		return
 	}
 	if f.Name == "" {
-		response.Fail(c, 101, "请输入通道名称")
+		response.Fail(c, 101, response.TranslateMsg(c, "ChannelNameRequired"))
 		return
 	}
 	if err := service.DB.Create(f).Error; err != nil {
 		global.Logger.Error("AlertChannel Create failed: ", err)
-		response.Fail(c, 500, "保存失败："+err.Error())
+		response.Fail(c, 500, response.TranslateMsg(c, "SaveFailed")+err.Error())
 		return
 	}
 	response.Success(c, f)
@@ -41,21 +41,21 @@ func (ct *AlertChannel) Create(c *gin.Context) {
 func (ct *AlertChannel) Update(c *gin.Context) {
 	f := &model.AlertChannel{}
 	if err := c.ShouldBindJSON(f); err != nil || f.RowId == 0 {
-		response.Fail(c, 101, "参数错误")
+		response.Fail(c, 101, response.TranslateMsg(c, "ParamError"))
 		return
 	}
 	old := &model.AlertChannel{}
 	service.DB.Where("row_id = ?", f.RowId).First(old)
 	if old.RowId == 0 {
-		response.Fail(c, 101, "记录不存在")
+		response.Fail(c, 101, response.TranslateMsg(c, "RecordNotFound"))
 		return
 	}
 	if f.SmtpPass == "" {
-		f.SmtpPass = old.SmtpPass // 密码留空则不修改
+		f.SmtpPass = old.SmtpPass // Leave the password blank and do not change it.
 	}
 	if err := service.DB.Model(old).Updates(f).Error; err != nil {
 		global.Logger.Error("AlertChannel Update failed: ", err)
-		response.Fail(c, 500, "保存失败："+err.Error())
+		response.Fail(c, 500, response.TranslateMsg(c, "SaveFailed")+err.Error())
 		return
 	}
 	response.Success(c, nil)
@@ -66,14 +66,14 @@ func (ct *AlertChannel) Delete(c *gin.Context) {
 		Id uint `json:"id"`
 	}{}
 	if err := c.ShouldBindJSON(f); err != nil || f.Id == 0 {
-		response.Fail(c, 101, "参数错误")
+		response.Fail(c, 101, response.TranslateMsg(c, "ParamError"))
 		return
 	}
-	// 检查是否有告警规则在使用此通道
+	// Check whether any alarm rules are using this channel
 	var usage int64
 	service.DB.Model(&model.AlertConfig{}).Where("channel_id = ?", f.Id).Count(&usage)
 	if usage > 0 {
-		response.Fail(c, 101, "该通道正在被告警规则使用，无法删除")
+		response.Fail(c, 101, response.TranslateMsg(c, "ChannelInUse"))
 		return
 	}
 	ch := &model.AlertChannel{}
@@ -81,19 +81,19 @@ func (ct *AlertChannel) Delete(c *gin.Context) {
 	response.Success(c, nil)
 }
 
-// AllList 返回所有通道（不分页），供选择器使用
+// AllList returns all channels (without paging) for use by the selector
 func (ct *AlertChannel) AllList(c *gin.Context) {
 	var list []model.AlertChannel
 	service.DB.Order("id desc").Find(&list)
 	response.Success(c, gin.H{"list": list})
 }
 
-// Test 测试发送一条消息到指定通道，用于验证通道配置是否正确
-// 请求体：AlertChannel 各字段（name/channel/webhook_url/smtp_*），可选 row_id 与 test_recipients
+// Test tests sending a message to the specified channel to verify whether the channel configuration is correct.
+// Request body: AlertChannel fields (name/channel/webhook_url/smtp_*）, optional row_id and test_recipients
 func (ct *AlertChannel) Test(c *gin.Context) {
 	f := &model.AlertChannel{}
 	if err := c.ShouldBindJSON(f); err != nil {
-		response.Fail(c, 101, "参数错误")
+		response.Fail(c, 101, response.TranslateMsg(c, "ParamError"))
 		return
 	}
 	var extra struct {
@@ -101,10 +101,10 @@ func (ct *AlertChannel) Test(c *gin.Context) {
 	}
 	_ = c.ShouldBindJSON(&extra)
 	if f.Channel == "" {
-		response.Fail(c, 101, "通道类型缺失")
+		response.Fail(c, 101, response.TranslateMsg(c, "ChannelTypeMissing"))
 		return
 	}
-	// 若指定已保存通道且未提供密码，则从数据库补全（列表中的通道密码为空）
+	// If a saved channel is specified and no password is provided, it will be completed from the database (the channel password in the list is empty)
 	if f.RowId > 0 && f.SmtpPass == "" {
 		old := &model.AlertChannel{}
 		service.DB.Where("row_id = ?", f.RowId).First(old)
@@ -114,7 +114,7 @@ func (ct *AlertChannel) Test(c *gin.Context) {
 	}
 	if err := service.AllService.NotifyService.TestChannel(f, extra.TestRecipients); err != nil {
 		global.Logger.Warnf("[AlertChannel] Test send failed: %v", err)
-		response.Fail(c, 500, "发送失败："+err.Error())
+		response.Fail(c, 500, response.TranslateMsg(c, "SendFailed")+err.Error())
 		return
 	}
 	response.Success(c, nil)

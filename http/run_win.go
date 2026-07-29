@@ -9,11 +9,11 @@ import (
 	"github.com/ymg2006/rustdesk-api/v2/global"
 )
 
-// Run 在 Windows 平台启动 HTTP 服务。
+// Run starts the HTTP service on Windows.
 //
-// Windows 下不使用 endless（其信号处理依赖 Unix 信号），直接基于标准库 http.Server
-// 启动，并显式设置读/写/空闲超时以缓解慢速攻击；
-// 若配置了 server.tls.enabled，则直接以 HTTPS 监听。
+// Windows does not use endless because its signal handling depends on Unix signals.
+// Instead, it starts a standard-library http.Server and explicitly sets read/write/idle
+// timeouts to mitigate slow attacks. If server.tls.enabled is configured, it listens with HTTPS directly.
 func Run(g *gin.Engine, addr string) {
 	read, write, idle := serverTimeouts()
 	srv := &http.Server{

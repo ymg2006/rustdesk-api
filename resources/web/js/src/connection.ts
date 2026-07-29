@@ -14,7 +14,7 @@ const HOSTS = [
   "rs-us.rustdesk.com",
 ];
 let HOST = localStorage.getItem("rendezvous-server") || HOSTS[0];
-//根据协议设置为ws或wss
+//Set to ws or wss according to protocol
 const SCHEMA=location.protocol=="https:"?"wss://":"ws://";
 
 type MsgboxCallback = (type: string, title: string, text: string) => void;

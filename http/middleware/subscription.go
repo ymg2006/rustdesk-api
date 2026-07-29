@@ -10,24 +10,24 @@ import (
 	"github.com/ymg2006/rustdesk-api/v2/service"
 )
 
-// SubscriptionGuard 订阅校验中间件
-// 挂在用户 API 分组上，校验当前用户的订阅是否有效。
-// 白名单路径跳过校验（详见 whitelist）。
+// SubscriptionGuard validates subscription status.
+// It is attached to user API groups and checks whether the current user's subscription is active.
+// Allowlisted paths skip this check; see whitelist.
 //
-// 中间件链顺序：CORS → Recovery → JwtAuth → SubscriptionGuard
-// JwtAuth 已在前面将 curUser 注入 context。
+// Middleware order: CORS → Recovery → JwtAuth → SubscriptionGuard.
+// JwtAuth has already injected curUser into the context.
 type SubscriptionGuard struct {
-	// whitelist 放行路径前缀列表（不含 /api/v1 前缀）
-	// 公开路径（无需 JWT）：login, register, notify, health, static
-	// 需 JWT 但订阅豁免：create-order, 订单查询, claim, redeem, mine
+	// whitelist contains allowed path prefixes without the /api/v1 prefix.
+	// Public paths do not require JWT: login, register, notify, health, static.
+	// JWT-required but subscription-exempt paths: create-order, order query, claim, redeem, mine.
 	whitelist []string
 }
 
-// NewSubscriptionGuard 创建订阅守卫
+// NewSubscriptionGuard creates a subscription guard.
 func NewSubscriptionGuard() *SubscriptionGuard {
 	return &SubscriptionGuard{
 		whitelist: []string{
-			// 认证但订阅豁免（过期用户也可访问）
+			// Authenticated but subscription-exempt; expired users can also access these endpoints.
 			"subscribe/create-order",
 			"subscribe/order/",
 			"subscribe/claim",
@@ -37,12 +37,12 @@ func NewSubscriptionGuard() *SubscriptionGuard {
 	}
 }
 
-// Handle 返回 gin.HandlerFunc
+// Handle returns a gin.HandlerFunc.
 func (g *SubscriptionGuard) Handle() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 判断当前路径是否命中白名单
+		// Check whether the current path matches the allowlist.
 		path := c.Request.URL.Path
-		// 去掉 /api/v1/ 前缀
+		// Remove the /api/v1/ prefix.
 		relativePath := strings.TrimPrefix(path, "/api/v1/")
 
 		if g.isWhitelisted(relativePath) {
@@ -50,7 +50,7 @@ func (g *SubscriptionGuard) Handle() gin.HandlerFunc {
 			return
 		}
 
-		// 从 context 取当前用户（由 JwtAuth 注入）
+		// Read the current user from context; JwtAuth injects it.
 		userInterface, exists := c.Get("curUser")
 		if !exists {
 			response.Fail(c, 403, response.TranslateMsg(c, "NeedLogin"))
@@ -64,16 +64,16 @@ func (g *SubscriptionGuard) Handle() gin.HandlerFunc {
 			return
 		}
 
-		// 检查订阅状态
+		// Check subscription status.
 		if user.SubscriptionExpireAt == nil || user.SubscriptionExpireAt.Before(time.Now()) {
-			// 重新查询以获取最新数据（避免缓存）
+			// Re-query to get fresh data and avoid stale cached values.
 			freshUser := service.AllService.UserService.InfoById(user.Id)
 			if freshUser.Id == 0 || freshUser.SubscriptionExpireAt == nil || freshUser.SubscriptionExpireAt.Before(time.Now()) {
 				response.Fail(c, 4001, response.TranslateMsg(c, "SubscriptionExpired"))
 				c.Abort()
 				return
 			}
-			// 更新 context 中的用户
+			// Update the user stored in context.
 			c.Set("curUser", freshUser)
 			c.Next()
 			return
@@ -83,7 +83,7 @@ func (g *SubscriptionGuard) Handle() gin.HandlerFunc {
 	}
 }
 
-// isWhitelisted 检查路径是否在白名单中
+// isWhitelisted checks whether the path is allowlisted.
 func (g *SubscriptionGuard) isWhitelisted(path string) bool {
 	for _, wl := range g.whitelist {
 		if strings.HasPrefix(path, wl) {

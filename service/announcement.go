@@ -13,7 +13,7 @@ func (as *AnnouncementService) List(where ...interface{}) *[]model.Announcement 
 	return announcements
 }
 
-// ListActiveForClient 返回客户端可显示的公告列表
+// ListActiveForClient returns the list of announcements that the client can display
 func (as *AnnouncementService) ListActiveForClient() *[]map[string]interface{} {
 	announcements := &[]model.Announcement{}
 	DB.Where("status = 1").Order("created_at desc").Find(announcements)

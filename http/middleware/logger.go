@@ -2,11 +2,11 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/ymg2006/rustdesk-api/v2/global"
 	"github.com/sirupsen/logrus"
+	"github.com/ymg2006/rustdesk-api/v2/global"
 )
 
-// Logger 日志中间件
+// Logger is the logging middleware.
 func Logger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		global.Logger.WithFields(

@@ -13,15 +13,15 @@ import (
 type UserToken struct {
 }
 
-// List 列表
-// @Tags 登录凭证
-// @Summary 登录凭证列表
-// @Description 登录凭证列表
+// List list
+// @Tags login credentials
+// @Summary List of login credentials
+// @Description List of login credentials
 // @Accept  json
 // @Produce  json
-// @Param page query int false "页码"
-// @Param page_size query int false "页大小"
-// @Param user_id query int false "用户ID"
+// @Param page query int false "page number"
+// @Param page_size query int false "page size"
+// @Param user_id query int false "User ID"
 // @Success 200 {object} response.Response{data=model.UserTokenList}
 // @Failure 500 {object} response.Response
 // @Router /admin/user_token/list [get]
@@ -41,13 +41,13 @@ func (ct *UserToken) List(c *gin.Context) {
 	response.Success(c, res)
 }
 
-// Delete 删除
-// @Tags 登录凭证
-// @Summary 登录凭证删除
-// @Description 登录凭证删除
+// Delete Delete
+// @Tags login credentials
+// @Summary Login credentials deleted
+// @Description Login credentials deleted
 // @Accept  json
 // @Produce  json
-// @Param body body model.UserToken true "登录凭证信息"
+// @Param body body model.UserToken true "Login credential information"
 // @Success 200 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /admin/user_token/delete [post]
@@ -82,21 +82,21 @@ func (ct *UserToken) Delete(c *gin.Context) {
 	response.Fail(c, 101, response.TranslateMsg(c, "ItemNotFound"))
 }
 
-// BatchDelete 批量删除
-// @Tags 登录凭证
-// @Summary 登录凭证批量删除
-// @Description 登录凭证批量删除
+// BatchDelete Batch delete
+// @Tags login credentials
+// @Summary Batch deletion of login credentials
+// @Description Batch deletion of login credentials
 // @Accept  json
 // @Produce  json
-// @Param body body admin.UserTokenBatchDeleteForm true "登录凭证信息"
+// @Param body body admin.UserTokenBatchDeleteForm true "Login credential information"
 // @Success 200 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /admin/user_token/batchDelete [post]
 // @Security token
-// DeleteExpired 删除已过期登录凭证
-// @Tags 登录凭证
-// @Summary 删除已过期登录凭证
-// @Description 删除已过期登录凭证
+// DeleteExpired deletes expired login credentials
+// @Tags login credentials
+// @Summary Delete expired login credentials
+// @Description Delete expired login credentials
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} response.Response

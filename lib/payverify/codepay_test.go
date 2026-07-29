@@ -9,7 +9,7 @@ func TestSign(t *testing.T) {
 		"pid":          "1000",
 		"out_trade_no": "SUB20260722001",
 		"money":        "10.00",
-		"name":         "pro订阅",
+		"name":         "pro subscription",
 		"trade_status": "TRADE_SUCCESS",
 	}
 	secret := "test_secret_key_123"

@@ -238,3 +238,264 @@ other = "Invite code is invalid or expired."
 description = "User disabled."
 one = "User has been disabled."
 other = "User has been disabled."
+
+[ServerInternalError]
+description = "Internal server error."
+one = "Internal server error."
+other = "Internal server error."
+
+[ParamError]
+description = "Parameter error."
+one = "Parameter error."
+other = "Parameter error."
+
+[FieldRequired]
+description = "Field required."
+one = "{{.P0}} is required."
+other = "{{.P0}} is required."
+
+[ShareTokenRequired]
+description = "Share token required."
+one = "Share token is required."
+other = "Share token is required."
+
+[ShareNotFound]
+description = "Share not found."
+one = "Share not found."
+other = "Share not found."
+
+[ShareExpired]
+description = "Share expired."
+one = "Share has expired."
+other = "Share has expired."
+
+[PeerNotFound]
+description = "Peer not found."
+one = "Peer not found."
+other = "Peer not found."
+
+[PermissionDenied]
+description = "Permission denied."
+one = "Permission denied."
+other = "Permission denied."
+
+[MissingOutTradeNo]
+description = "Missing out_trade_no."
+one = "Missing out_trade_no."
+other = "Missing out_trade_no."
+
+[AuthorizationInProgress]
+description = "Authorization in progress."
+one = "Authorization in progress, please log in and bind."
+other = "Authorization in progress, please log in and bind."
+
+[NoAuthedOidcFound]
+description = "No authorized OIDC found."
+one = "No authorized OIDC session was found."
+other = "No authorized OIDC session was found."
+
+[Unauthorized]
+description = "Unauthorized."
+one = "Unauthorized."
+other = "Unauthorized."
+
+[InvalidRustdeskKey]
+description = "Invalid RustDesk key."
+one = "Invalid RustDesk key."
+other = "Invalid RustDesk key."
+
+[NameRequired]
+description = "Name required."
+one = "Please enter a name."
+other = "Please enter a name."
+
+[ChannelNameRequired]
+description = "Channel name required."
+one = "Please enter the channel name."
+other = "Please enter the channel name."
+
+[SaveFailed]
+description = "Save failed."
+one = "Save failed."
+other = "Save failed."
+
+[SendFailed]
+description = "Send failed."
+one = "Send failed."
+other = "Send failed."
+
+[RecordNotFound]
+description = "Record not found."
+one = "Record not found."
+other = "Record not found."
+
+[ChannelInUse]
+description = "Channel in use."
+one = "This channel is used by alert rules and cannot be deleted."
+other = "This channel is used by alert rules and cannot be deleted."
+
+[ChannelTypeMissing]
+description = "Channel type missing."
+one = "Channel type is missing."
+other = "Channel type is missing."
+
+[SelectNotifyChannel]
+description = "Select notification channel."
+one = "Please select a notification channel."
+other = "Please select a notification channel."
+
+[NotifyChannelNotFound]
+description = "Notification channel not found."
+one = "Notification channel not found."
+other = "Notification channel not found."
+
+[IdRequired]
+description = "ID required."
+one = "ID is required."
+other = "ID is required."
+
+[VersionRequired]
+description = "Version required."
+one = "Version number is required."
+other = "Version number is required."
+
+[DownloadUrlRequired]
+description = "Download URL required."
+one = "Download URL is required."
+other = "Download URL is required."
+
+[VersionNotFound]
+description = "Version not found."
+one = "Version not found."
+other = "Version not found."
+
+[NameAndDownloadUrlRequired]
+description = "Name and download URL required."
+one = "Name and download URL are required."
+other = "Name and download URL are required."
+
+[AnnouncementNotFound]
+description = "Announcement not found."
+one = "Announcement not found."
+other = "Announcement not found."
+
+[TitleRequired]
+description = "Title required."
+one = "Title is required."
+other = "Title is required."
+
+[UnsupportedOnlineRestart]
+description = "Unsupported online restart."
+one = "Online service restart is not supported on the current platform. Please restart the process manually."
+other = "Online service restart is not supported on the current platform. Please restart the process manually."
+
+[ConfigPathUnknown]
+description = "Config path unknown."
+one = "Configuration file path is unknown."
+other = "Configuration file path is unknown."
+
+[ReadConfigFailed]
+description = "Read config failed."
+one = "Failed to read configuration file."
+other = "Failed to read configuration file."
+
+[WriteConfigFailed]
+description = "Write config failed."
+one = "Failed to write configuration file."
+other = "Failed to write configuration file."
+
+[ConfigFormatInvalid]
+description = "Invalid config format."
+one = "Invalid configuration format, please check your input."
+other = "Invalid configuration format, please check your input."
+
+[ConfigYamlInvalid]
+description = "Invalid YAML config."
+one = "Invalid configuration format (YAML parse failed), please check YAML syntax."
+other = "Invalid configuration format (YAML parse failed), please check YAML syntax."
+
+[UnsupportedDbType]
+description = "Unsupported database type."
+one = "Unsupported database type."
+other = "Unsupported database type."
+
+[ExportDbFailed]
+description = "Export database failed."
+one = "Failed to export database."
+other = "Failed to export database."
+
+[InvalidId]
+description = "Invalid ID."
+one = "Invalid ID."
+other = "Invalid ID."
+
+[SubscriptionExpired]
+description = "Subscription expired."
+one = "Subscription has expired."
+other = "Subscription has expired."
+
+[OrderNotFound]
+description = "Order not found."
+one = "Order not found."
+other = "Order not found."
+
+[OrderNotPaid]
+description = "Order not paid."
+one = "Order has not been paid."
+other = "Order has not been paid."
+
+[CodeNotFound]
+description = "Code not found."
+one = "Code not found."
+other = "Code not found."
+
+[CodeUsed]
+description = "Code used."
+one = "Code has already been used."
+other = "Code has already been used."
+
+[CodeRevoked]
+description = "Code revoked."
+one = "Code has been revoked."
+other = "Code has been revoked."
+
+[CodeExpired]
+description = "Code expired."
+one = "Code has expired."
+other = "Code has expired."
+
+[LoginFailed]
+description = "Login failed."
+one = "Login failed."
+other = "Login failed."
+
+[UserNotFound]
+description = "User not found."
+one = "User not found."
+other = "User not found."
+
+[LoginBanned]
+description = "Login banned."
+one = "Login is banned."
+other = "Login is banned."
+
+[NoCaptchaRequired]
+description = "No captcha required."
+one = "Captcha is not required."
+other = "Captcha is not required."
+
+[RequiredFields]
+description = "Required fields missing."
+one = "Required fields are missing: {{.P0}}."
+other = "Required fields are missing: {{.P0}}."
+
+[InvalidSourceType]
+description = "Invalid source type."
+one = "Invalid source type. Supported values: device_group / ab_tags."
+other = "Invalid source type. Supported values: device_group / ab_tags."
+
+[CleanupYearsInvalid]
+description = "Invalid cleanup years."
+one = "Invalid parameters. Only messages older than 1 or 3 years can be cleaned."
+other = "Invalid parameters. Only messages older than 1 or 3 years can be cleaned."
+

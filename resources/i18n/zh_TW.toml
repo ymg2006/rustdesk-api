@@ -48,6 +48,46 @@ description = "System error."
 one = "系統錯誤。"
 other = "系統錯誤。"
 
+[MfaRequired]
+description = "MFA required."
+one = "需要進行多因素驗證（MFA），請輸入驗證碼。"
+other = "需要進行多因素驗證（MFA），請輸入驗證碼。"
+
+[MfaTokenInvalid]
+description = "MFA token invalid."
+one = "MFA 驗證已失效，請重新登入。"
+other = "MFA 驗證已失效，請重新登入。"
+
+[MfaCodeError]
+description = "MFA code error."
+one = "驗證碼錯誤，請重試。"
+other = "驗證碼錯誤，請重試。"
+
+[MfaTokenMissing]
+description = "MFA token missing from request."
+one = "MFA 權杖缺失或已過期，請返回登入頁面重新操作。"
+other = "MFA 權杖缺失或已過期，請返回登入頁面重新操作。"
+
+[MfaSecretEmpty]
+description = "MFA secret empty."
+one = "請先取得 MFA 密鑰。"
+other = "請先取得 MFA 密鑰。"
+
+[PasswordError]
+description = "Password error."
+one = "密碼錯誤。"
+other = "密碼錯誤。"
+
+[MfaEnabled]
+description = "MFA enabled."
+one = "已啟用多因素驗證。"
+other = "已啟用多因素驗證。"
+
+[MfaDisabled]
+description = "MFA disabled."
+one = "已停用多因素驗證。"
+other = "已停用多因素驗證。"
+
 [ConfigNotFound]
 description = "Config not found."
 one = "找不到設定。"
@@ -167,3 +207,304 @@ other = "已被禁用。"
 description = "Register success, wait admin confirm."
 one = "註冊成功，等待管理員確認。"
 other = "註冊成功，等待管理員確認。"
+
+[ParentDeptNotFound]
+description = "Parent department not found."
+one = "上級部門不存在。"
+other = "上級部門不存在。"
+
+[DeptCycleError]
+description = "Department hierarchy cycle detected."
+one = "不能選擇自身或下級部門作為上級部門。"
+other = "不能選擇自身或下級部門作為上級部門。"
+
+[DeptHasChildren]
+description = "Department has sub-departments."
+one = "該部門下存在子部門，無法刪除。"
+other = "該部門下存在子部門，無法刪除。"
+
+[DeptHasUsers]
+description = "Department has members."
+one = "該部門下存在成員，無法刪除。"
+other = "該部門下存在成員，無法刪除。"
+
+[AccountExpired]
+description = "Account expired."
+one = "帳戶已過期，請聯絡管理員。"
+other = "帳戶已過期，請聯絡管理員。"
+
+[InviteCodeRequired]
+description = "Invite code required."
+one = "需要提供邀請碼才能註冊。"
+other = "需要提供邀請碼才能註冊。"
+
+[InviteCodeInvalid]
+description = "Invite code invalid."
+one = "邀請碼無效或已過期。"
+other = "邀請碼無效或已過期。"
+
+[UserDisabled]
+description = "User disabled."
+one = "使用者已被停用。"
+other = "使用者已被停用。"
+
+[ServerInternalError]
+description = "Internal server error."
+one = "伺服器內部錯誤"
+other = "伺服器內部錯誤"
+
+[ParamError]
+description = "Parameter error."
+one = "參數錯誤。"
+other = "參數錯誤。"
+
+[FieldRequired]
+description = "Field required."
+one = "{{.P0}} 不能為空。"
+other = "{{.P0}} 不能為空。"
+
+[ShareTokenRequired]
+description = "Share token required."
+one = "分享權杖不能為空。"
+other = "分享權杖不能為空。"
+
+[ShareNotFound]
+description = "Share not found."
+one = "分享不存在。"
+other = "分享不存在。"
+
+[ShareExpired]
+description = "Share expired."
+one = "分享已過期。"
+other = "分享已過期。"
+
+[PeerNotFound]
+description = "Peer not found."
+one = "裝置不存在。"
+other = "裝置不存在。"
+
+[PermissionDenied]
+description = "Permission denied."
+one = "權限不足。"
+other = "權限不足。"
+
+[MissingOutTradeNo]
+description = "Missing out_trade_no."
+one = "缺少 out_trade_no。"
+other = "缺少 out_trade_no。"
+
+[AuthorizationInProgress]
+description = "Authorization in progress."
+one = "授權進行中，請登入並綁定。"
+other = "授權進行中，請登入並綁定。"
+
+[NoAuthedOidcFound]
+description = "No authorized OIDC found."
+one = "未找到已授權的 OIDC 工作階段。"
+other = "未找到已授權的 OIDC 工作階段。"
+
+[Unauthorized]
+description = "Unauthorized."
+one = "未授權。"
+other = "未授權。"
+
+[InvalidRustdeskKey]
+description = "Invalid RustDesk key."
+one = "RustDesk 密鑰無效。"
+other = "RustDesk 密鑰無效。"
+
+[NameRequired]
+description = "Name required."
+one = "請輸入名稱。"
+other = "請輸入名稱。"
+
+[ChannelNameRequired]
+description = "Channel name required."
+one = "請輸入通道名稱。"
+other = "請輸入通道名稱。"
+
+[SaveFailed]
+description = "Save failed."
+one = "儲存失敗。"
+other = "儲存失敗。"
+
+[SendFailed]
+description = "Send failed."
+one = "傳送失敗。"
+other = "傳送失敗。"
+
+[RecordNotFound]
+description = "Record not found."
+one = "記錄不存在。"
+other = "記錄不存在。"
+
+[ChannelInUse]
+description = "Channel in use."
+one = "該通道正在被告警規則使用，無法刪除。"
+other = "該通道正在被告警規則使用，無法刪除。"
+
+[ChannelTypeMissing]
+description = "Channel type missing."
+one = "通道類型缺失。"
+other = "通道類型缺失。"
+
+[SelectNotifyChannel]
+description = "Select notification channel."
+one = "請選擇通知通道。"
+other = "請選擇通知通道。"
+
+[NotifyChannelNotFound]
+description = "Notification channel not found."
+one = "通知通道不存在。"
+other = "通知通道不存在。"
+
+[IdRequired]
+description = "ID required."
+one = "ID不能為空。"
+other = "ID不能為空。"
+
+[VersionRequired]
+description = "Version required."
+one = "版本號不能為空。"
+other = "版本號不能為空。"
+
+[DownloadUrlRequired]
+description = "Download URL required."
+one = "下載連結不能為空。"
+other = "下載連結不能為空。"
+
+[VersionNotFound]
+description = "Version not found."
+one = "版本不存在。"
+other = "版本不存在。"
+
+[NameAndDownloadUrlRequired]
+description = "Name and download URL required."
+one = "名稱和下載地址不能為空。"
+other = "名稱和下載地址不能為空。"
+
+[AnnouncementNotFound]
+description = "Announcement not found."
+one = "公告不存在。"
+other = "公告不存在。"
+
+[TitleRequired]
+description = "Title required."
+one = "標題不能為空。"
+other = "標題不能為空。"
+
+[UnsupportedOnlineRestart]
+description = "Unsupported online restart."
+one = "目前平台不支援線上重啟服務，請手動重啟程序。"
+other = "目前平台不支援線上重啟服務，請手動重啟程序。"
+
+[ConfigPathUnknown]
+description = "Config path unknown."
+one = "設定檔路徑未知。"
+other = "設定檔路徑未知。"
+
+[ReadConfigFailed]
+description = "Read config failed."
+one = "讀取設定檔失敗。"
+other = "讀取設定檔失敗。"
+
+[WriteConfigFailed]
+description = "Write config failed."
+one = "寫入設定檔失敗。"
+other = "寫入設定檔失敗。"
+
+[ConfigFormatInvalid]
+description = "Invalid config format."
+one = "設定格式有誤，請檢查輸入。"
+other = "設定格式有誤，請檢查輸入。"
+
+[ConfigYamlInvalid]
+description = "Invalid YAML config."
+one = "設定格式錯誤（YAML 解析失敗），請檢查 YAML 語法。"
+other = "設定格式錯誤（YAML 解析失敗），請檢查 YAML 語法。"
+
+[UnsupportedDbType]
+description = "Unsupported database type."
+one = "不支援的資料庫類型。"
+other = "不支援的資料庫類型。"
+
+[ExportDbFailed]
+description = "Export database failed."
+one = "匯出資料庫失敗。"
+other = "匯出資料庫失敗。"
+
+[InvalidId]
+description = "Invalid ID."
+one = "ID無效。"
+other = "ID無效。"
+
+[SubscriptionExpired]
+description = "Subscription expired."
+one = "訂閱已過期。"
+other = "訂閱已過期。"
+
+[OrderNotFound]
+description = "Order not found."
+one = "訂單不存在。"
+other = "訂單不存在。"
+
+[OrderNotPaid]
+description = "Order not paid."
+one = "訂單未付款。"
+other = "訂單未付款。"
+
+[CodeNotFound]
+description = "Code not found."
+one = "兌換碼不存在。"
+other = "兌換碼不存在。"
+
+[CodeUsed]
+description = "Code used."
+one = "兌換碼已被使用。"
+other = "兌換碼已被使用。"
+
+[CodeRevoked]
+description = "Code revoked."
+one = "兌換碼已撤銷。"
+other = "兌換碼已撤銷。"
+
+[CodeExpired]
+description = "Code expired."
+one = "兌換碼已過期。"
+other = "兌換碼已過期。"
+
+[LoginFailed]
+description = "Login failed."
+one = "登入失敗。"
+other = "登入失敗。"
+
+[UserNotFound]
+description = "User not found."
+one = "使用者不存在。"
+other = "使用者不存在。"
+
+[LoginBanned]
+description = "Login banned."
+one = "登入已被封禁。"
+other = "登入已被封禁。"
+
+[NoCaptchaRequired]
+description = "No captcha required."
+one = "不需要驗證碼。"
+other = "不需要驗證碼。"
+
+[RequiredFields]
+description = "Required fields missing."
+one = "必填欄位缺失：{{.P0}}。"
+other = "必填欄位缺失：{{.P0}}。"
+
+[InvalidSourceType]
+description = "Invalid source type."
+one = "source_type 無效，僅支援 device_group / ab_tags。"
+other = "source_type 無效，僅支援 device_group / ab_tags。"
+
+[CleanupYearsInvalid]
+description = "Invalid cleanup years."
+one = "參數錯誤，僅支援清理超過1年或3年的訊息。"
+other = "參數錯誤，僅支援清理超過1年或3年的訊息。"
+

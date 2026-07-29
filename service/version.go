@@ -4,7 +4,7 @@ import (
 	"github.com/ymg2006/rustdesk-api/v2/model"
 )
 
-// AppReleaseService 版本发布管理
+// AppReleaseService version release management
 type AppReleaseService struct {
 }
 
@@ -12,8 +12,8 @@ func (s *AppReleaseService) Latest(platform string) *model.AppRelease {
 	var v model.AppRelease
 	db := DB.Where("status = ?", model.COMMON_STATUS_ENABLE)
 	if platform != "" {
-		// platform 别名兼容：客户端可能发送 ubuntu/linux、macos/mac，
-		// 而后台存储的 platform 取值可能不一致，故按同义组匹配。
+		// platform alias compatibility: the client may sendubuntu/linux、macos/mac,
+		// The platform values ​​stored in the background may be inconsistent, so they are matched according to synonymous groups.
 		aliasMap := map[string][]string{
 			"ubuntu":  {"ubuntu", "linux"},
 			"linux":   {"linux", "ubuntu"},

@@ -2,14 +2,14 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	_ "github.com/ymg2006/rustdesk-api/v2/docs/admin"
 	"github.com/ymg2006/rustdesk-api/v2/global"
 	"github.com/ymg2006/rustdesk-api/v2/http/controller/admin"
 	"github.com/ymg2006/rustdesk-api/v2/http/controller/admin/my"
 	apic "github.com/ymg2006/rustdesk-api/v2/http/controller/api"
 	"github.com/ymg2006/rustdesk-api/v2/http/middleware"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func Init(g *gin.Engine) {
@@ -66,7 +66,7 @@ func Init(g *gin.Engine) {
 	InviteCodeBind(adg)
 	OrderBind(adg)
 	SubscriptionBind(adg)
-	//访问静态文件
+	// Serve static files.
 	//g.StaticFS("/upload", http.Dir(global.Config.Gin.ResourcesPath+"/upload"))
 }
 
@@ -110,9 +110,9 @@ func StationMessageBind(adg *gin.RouterGroup) {
 	rg.GET("/list", cont.List)
 	rg.GET("/unread_count", cont.UnreadCount)
 	rg.POST("/mark_read", cont.MarkRead)
-	// 发送消息：所有登录用户均可发送
+	// Send messages: all logged-in users may send.
 	rg.POST("/send", cont.Send)
-	// 广播和清理需要管理员权限
+	// Broadcast and cleanup require admin privileges.
 	rg.POST("/broadcast", middleware.AdminPrivilege(), cont.Broadcast)
 	rg.POST("/cleanup", middleware.AdminPrivilege(), cont.Cleanup)
 }
@@ -165,7 +165,7 @@ func UserBind(rg *gin.RouterGroup) {
 		aR.POST("/myOauth", cont.MyOauth)
 		//aR.GET("/myPeer", cont.MyPeer)
 		aR.POST("/groupUsers", cont.GroupUsers)
-		// MFA(TOTP) 自服务：当前登录用户自身的多因素认证管理
+		// MFA (TOTP) self-service for the current logged-in user's own MFA management.
 		aR.POST("/mfa/setup", cont.MfaSetup)
 		aR.POST("/mfa/enable", cont.MfaEnable)
 		aR.POST("/mfa/disable", cont.MfaDisable)
@@ -180,7 +180,7 @@ func UserBind(rg *gin.RouterGroup) {
 		aRP.POST("/update", cont.Update)
 		aRP.POST("/delete", cont.Delete)
 		aRP.POST("/changePwd", cont.UpdatePassword)
-		// 管理员强制重置用户 MFA（救援）
+		// Admin forced MFA reset for account recovery.
 		aRP.POST("/mfa/reset", cont.MfaReset)
 	}
 }
@@ -328,24 +328,23 @@ func UserTokenBind(rg *gin.RouterGroup) {
 func ConfigBind(rg *gin.RouterGroup) {
 	aR := rg.Group("/config")
 	rs := &admin.Config{}
-
-	// 注意：/config/admin 必须在 BackendUserAuth() 之前注册，是有意为之——
-	// 登录页需要读取后台标题(title)做品牌展示，此时用户尚未登录。
-	// 该接口仅返回 title / hello（hello 来自服务端配置指定的文件，非用户输入），
-	// 不暴露数据库密码、OSS key、JWT key 等敏感配置，故保持公开。
-	// 若未来需要锁定，请同时确认前端登录页的标题获取方式，避免破坏登录流程。
+	// Note: /config/admin must be registered before BackendUserAuth() intentionally.
+	// The login page needs to read the backend title for branding before the user is logged in.
+	// This endpoint only returns title / hello; hello comes from a server-configured file and is not user input.
+	// It does not expose database passwords, OSS keys, JWT keys, or other sensitive settings, so it remains public.
+	// If this is locked down later, also verify the login page title-loading flow to avoid breaking login.
 	aR.GET("/admin", rs.AdminConfig)
 
 	aR.Use(middleware.BackendUserAuth())
 	aR.GET("/server", rs.ServerConfig)
 	aR.GET("/app", rs.AppConfig)
 
-	// 配置文件读写：仅管理员
+	// Configuration file read/write: admins only.
 	aRf := aR.Group("/file").Use(middleware.AdminPrivilege())
 	aRf.GET("/get", rs.ConfigFileGet)
 	aRf.POST("/update", rs.ConfigFileUpdate)
 
-	// 重启服务：仅管理员
+	// Service restart: admins only.
 	aR.POST("/restart", middleware.AdminPrivilege(), rs.ServiceRestart)
 }
 
@@ -485,11 +484,11 @@ func ProcessMonitorBind(adg *gin.RouterGroup) {
 	rg.GET("/peer_sources", cont.PeerSources)
 }
 
-// SubscribeBind 订阅用户端 API（需登录，认证 + 订阅豁免）
+// SubscribeBind registers user subscription APIs. Login is required, with authentication and subscription exemptions.
 func SubscribeBind(adg *gin.RouterGroup) {
 	cont := &apic.SubscribeController{}
 	rg := adg.Group("/subscribe")
-	// 注意：这些路由在 BackendUserAuth() 之后注册，用户已认证
+	// These routes are registered after BackendUserAuth(), so the user is authenticated.
 	rg.GET("/plans", cont.Plans)
 	rg.POST("/create-order", cont.CreateOrder)
 	rg.GET("/order/:out_trade_no", cont.QueryOrder)
@@ -498,7 +497,7 @@ func SubscribeBind(adg *gin.RouterGroup) {
 	rg.GET("/mine", cont.Mine)
 }
 
-// InviteCodeBind 后台邀请码管理（仅管理员）
+// InviteCodeBind registers admin invite-code management routes. Admins only.
 func InviteCodeBind(adg *gin.RouterGroup) {
 	cont := &admin.AdminInviteCodeController{}
 	rg := adg.Group("/invite-codes").Use(middleware.AdminPrivilege())
@@ -508,7 +507,7 @@ func InviteCodeBind(adg *gin.RouterGroup) {
 	rg.GET("/export", cont.Export)
 }
 
-// OrderBind 后台订单管理（仅管理员）
+// OrderBind registers admin order management routes. Admins only.
 func OrderBind(adg *gin.RouterGroup) {
 	cont := &admin.OrderCtl{}
 	rg := adg.Group("/orders").Use(middleware.AdminPrivilege())
@@ -518,7 +517,7 @@ func OrderBind(adg *gin.RouterGroup) {
 	rg.POST("/:id/close", cont.Close)
 }
 
-// SubscriptionBind 后台订阅管理（仅管理员）
+// SubscriptionBind registers admin subscription management routes. Admins only.
 func SubscriptionBind(adg *gin.RouterGroup) {
 	cont := &admin.SubscriptionCtl{}
 	rg := adg.Group("/subscriptions").Use(middleware.AdminPrivilege())

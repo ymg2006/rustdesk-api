@@ -6,24 +6,24 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ymg2006/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/http/response"
 	"github.com/ymg2006/rustdesk-api/v2/service"
 )
 
-// ProcessMonitorAuth 进程/端口监控上报与配置下发接口的鉴权中间件。
+// ProcessMonitorAuth authenticates process/port monitoring report and configuration-delivery endpoints.
 //
-// 设计目标：允许未登录 api-server 账号的设备上报自身监控状态，
-// 同时具备设备身份校验（依赖客户端与服务器共享的 rustdesk key）。
-//  1. 携带有效 access_token / JWT 的已登录客户端：照常验证通过（兼容现状）。
-//  2. 未登录设备：若请求携带与服务器配置一致的 rustdesk key（X-Rustdesk-Key 头），
-//     视为可信设备，放行。
-//  3. 服务器未配置 rustdesk key 时：兼容放行（保持旧行为）。
-//  4. 既无有效 token 也无正确 key：拒绝（401）。
+// Design goals: allow devices that are not logged into api-server accounts to report their own monitoring status,
+// while still providing device identity checks based on the rustdesk key shared by clients and the server.
+//  1. Logged-in clients with a valid access_token / JWT are verified normally for backward compatibility.
+//  2. Unauthenticated devices are trusted when they provide the server-configured rustdesk key in X-Rustdesk-Key.
+//  3. When no rustdesk key is configured on the server, requests are allowed for backward compatibility.
+//  4. Requests with neither a valid token nor the correct key are rejected with 401.
 //
-// 说明：rustdesk key 为 hbbs 服务器公钥（公开信息），该校验用于确认上报方
-// 确实配置了本服务器的公钥，属“软”身份校验，安全性仍依赖私有/内网部署隔离。
+// Note: the rustdesk key is the hbbs server public key. This check confirms that the reporter has configured
+// this server's public key. It is a soft identity check; security still depends on private/internal deployment isolation.
 func ProcessMonitorAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 1) 已登录：优先 JWT，再降级 DB token
+		// 1) Logged in: prefer JWT, then fall back to DB token.
 		if auth := c.GetHeader("Authorization"); auth != "" && strings.HasPrefix(auth, "Bearer ") {
 			token := strings.TrimSpace(auth[7:])
 			if len(token) > 0 {
@@ -46,7 +46,7 @@ func ProcessMonitorAuth() gin.HandlerFunc {
 			}
 		}
 
-		// 2) 未登录设备：用共享 rustdesk key 校验设备身份
+		// 2) Unauthenticated device: verify device identity with the shared rustdesk key.
 		serverKey := normalizeRustdeskKey(global.Config.Rustdesk.Key)
 		if serverKey != "" {
 			clientKey := normalizeRustdeskKey(c.GetHeader("X-Rustdesk-Key"))
@@ -54,17 +54,17 @@ func ProcessMonitorAuth() gin.HandlerFunc {
 				c.Next()
 				return
 			}
-			// 设备 key 不匹配：拒绝
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"code": 401, "msg": "invalid rustdesk key"})
+			// Device key mismatch: reject.
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"code": 401, "msg": response.TranslateMsg(c, "InvalidRustdeskKey")})
 			return
 		}
 
-		// 3) 服务器未配置 key：兼容放行（保持旧行为）
+		// 3) Server key is not configured: allow for backward compatibility.
 		c.Next()
 	}
 }
 
-// normalizeRustdeskKey 去掉所有空白字符（含换行、空格），便于比对 PEM / 裸 base64 等不同书写格式。
+// normalizeRustdeskKey removes all whitespace, including newlines and spaces, to compare PEM and raw base64 forms consistently.
 func normalizeRustdeskKey(k string) string {
 	return strings.Join(strings.Fields(strings.TrimSpace(k)), "")
 }

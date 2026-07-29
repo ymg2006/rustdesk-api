@@ -12,7 +12,7 @@ import (
 type Announcement struct {
 }
 
-// List 公告列表
+// List announcement list
 func (a *Announcement) List(c *gin.Context) {
 	announcements := service.AllService.AnnouncementService.List()
 	response.Success(c, gin.H{
@@ -20,18 +20,18 @@ func (a *Announcement) List(c *gin.Context) {
 	})
 }
 
-// Info 公告详情
+// Info announcement details
 func (a *Announcement) Info(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Query("id"))
 	announcement := service.AllService.AnnouncementService.Info(id)
 	if announcement.Id == 0 {
-		response.Fail(c, 404, "公告不存在")
+		response.Fail(c, 404, response.TranslateMsg(c, "AnnouncementNotFound"))
 		return
 	}
 	response.Success(c, announcement)
 }
 
-// Create 创建公告
+// Create Create announcement
 func (a *Announcement) Create(c *gin.Context) {
 	announcement := &model.Announcement{}
 	if err := c.ShouldBindJSON(announcement); err != nil {
@@ -39,14 +39,14 @@ func (a *Announcement) Create(c *gin.Context) {
 		return
 	}
 	if announcement.Title == "" {
-		response.Fail(c, 401, "标题不能为空")
+		response.Fail(c, 401, response.TranslateMsg(c, "TitleRequired"))
 		return
 	}
 	service.AllService.AnnouncementService.Create(announcement)
 	response.Success(c, announcement)
 }
 
-// Update 更新公告
+// Update update announcement
 func (a *Announcement) Update(c *gin.Context) {
 	announcement := &model.Announcement{}
 	if err := c.ShouldBindJSON(announcement); err != nil {
@@ -54,19 +54,19 @@ func (a *Announcement) Update(c *gin.Context) {
 		return
 	}
 	if announcement.Id == 0 {
-		response.Fail(c, 401, "ID不能为空")
+		response.Fail(c, 401, response.TranslateMsg(c, "IdRequired"))
 		return
 	}
 	service.AllService.AnnouncementService.Update(announcement)
 	response.Success(c, nil)
 }
 
-// Delete 删除公告
+// Delete delete announcement
 func (a *Announcement) Delete(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Query("id"))
 	announcement := service.AllService.AnnouncementService.Info(id)
 	if announcement.Id == 0 {
-		response.Fail(c, 404, "公告不存在")
+		response.Fail(c, 404, response.TranslateMsg(c, "AnnouncementNotFound"))
 		return
 	}
 	service.AllService.AnnouncementService.Delete(announcement)

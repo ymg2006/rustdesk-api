@@ -5,9 +5,9 @@ import (
 )
 
 type UserForm struct {
-	Id        uint   `json:"id"`
-	Username  string `json:"username" validate:"required,gte=2,lte=32"`
-	Email     string `json:"email"` //validate:"required,email" email不强制
+	Id       uint   `json:"id"`
+	Username string `json:"username" validate:"required,gte=2,lte=32"`
+	Email    string `json:"email"` // validate:"required,email" is not enforced for email.
 	//Password string           `json:"password" validate:"required,gte=4,lte=20"`
 	Nickname  string           `json:"nickname"`
 	Avatar    string           `json:"avatar"`
@@ -73,19 +73,19 @@ type GroupUsersQuery struct {
 	UserId uint `json:"user_id"`
 }
 
-// MfaEnableForm 启用 MFA 时校验动态码
+// MfaEnableForm verifies a TOTP code when enabling MFA.
 type MfaEnableForm struct {
-	Code string `json:"code" validate:"required" label:"动态码"`
+	Code string `json:"code" validate:"required" label:"TOTP code"`
 }
 
-// MfaDisableForm 关闭 MFA 时需验证登录密码
+// MfaDisableForm verifies the login password when disabling MFA.
 type MfaDisableForm struct {
-	Password string `json:"password" validate:"required" label:"密码"`
+	Password string `json:"password" validate:"required" label:"password"`
 }
 
-// MfaResetForm 管理员强制重置用户 MFA
+// MfaResetForm is used by admins to forcibly reset a user's MFA.
 type MfaResetForm struct {
-	UserId uint `json:"user_id" validate:"required" label:"用户ID"`
+	UserId uint `json:"user_id" validate:"required" label:"user ID"`
 }
 
 type RegisterForm struct {
@@ -99,5 +99,3 @@ type RegisterForm struct {
 type UserTokenBatchDeleteForm struct {
 	Ids []uint `json:"ids" validate:"required"`
 }
-
-

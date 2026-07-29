@@ -11,18 +11,18 @@ import (
 	"github.com/ymg2006/rustdesk-api/v2/service"
 )
 
-// SubscriptionCtl 后台订阅管理
+// SubscriptionCtl background subscription management
 type SubscriptionCtl struct{}
 
-// NewSubscriptionCtl 创建控制器
+// NewSubscriptionCtl creates a controller
 func NewSubscriptionCtl() *SubscriptionCtl {
 	return &SubscriptionCtl{}
 }
 
-// List 订阅用户列表
+// List Subscriber list
 func (sc *SubscriptionCtl) List(c *gin.Context) {
-	status := c.Query("status")       // active / expired / none
-	keyword := c.Query("keyword")      // 按用户名或ID搜索
+	status := c.Query("status")   // active / expired / none
+	keyword := c.Query("keyword") // Search by username or ID
 	pageStr := c.Query("page")
 	pageSizeStr := c.Query("size")
 
@@ -37,7 +37,7 @@ func (sc *SubscriptionCtl) List(c *gin.Context) {
 
 	db := global.DB.Model(&model.User{})
 
-	// 订阅状态筛选
+	// Subscription status filter
 	now := time.Now()
 	switch status {
 	case "active":
@@ -50,7 +50,7 @@ func (sc *SubscriptionCtl) List(c *gin.Context) {
 		db = db.Where("subscription_expire_at IS NOT NULL AND subscription_expire_at >= ?", time.Date(9999, 1, 1, 0, 0, 0, 0, time.UTC))
 	}
 
-	// 关键词搜索
+	// keyword search
 	if keyword != "" {
 		db = db.Where("id = ? OR username LIKE ?", parseUint(keyword), "%"+keyword+"%")
 	}
@@ -93,14 +93,14 @@ func (sc *SubscriptionCtl) List(c *gin.Context) {
 	})
 }
 
-// ExtendReq 延长会员请求
+// ExtendReq Extend membership request
 type ExtendReq struct {
 	UserID  uint   `json:"user_id" binding:"required"`
-	Plan    string `json:"plan"`     // 套餐标识，缺省 "pro"
-	PlanKey string `json:"plan_key" binding:"required"` // 时长 key：1m / 3m / 6m / 12m / forever
+	Plan    string `json:"plan"`                        // Package ID, default "pro"
+	PlanKey string `json:"plan_key" binding:"required"` // Duration key: 1m / 3m / 6m / 12m / forever
 }
 
-// Extend 延长用户会员（按月付费）
+// Extend Extend user membership (paid monthly)
 func (sc *SubscriptionCtl) Extend(c *gin.Context) {
 	req := &ExtendReq{}
 	if err := c.ShouldBindJSON(req); err != nil {
@@ -121,10 +121,10 @@ func (sc *SubscriptionCtl) Extend(c *gin.Context) {
 	now := time.Now()
 	var newExpire time.Time
 
-	// 永久套餐特殊处理：设为 9999 年
+	// Special treatment for permanent packages: set to 9999
 	if req.PlanKey == "forever" {
 		newExpire = time.Date(9999, 1, 1, 0, 0, 0, 0, time.UTC)
-		// 永久会员：expired_at 设为 0（永不过期）
+		// Permanent membership: expired_at is set to 0 (never expires)
 		if err := global.DB.Model(&model.User{}).Where("id = ?", req.UserID).
 			Updates(map[string]interface{}{
 				"subscription_plan":      req.Plan + "-forever",
@@ -142,7 +142,7 @@ func (sc *SubscriptionCtl) Extend(c *gin.Context) {
 		return
 	}
 
-	// 查配置获取 period_days
+	// Check the configuration to obtain period_days
 	opt := global.Config.Subscription.LookupPlan(req.PlanKey)
 	if opt == nil || opt.PeriodDays <= 0 {
 		response.Fail(c, 400, "invalid plan_key")

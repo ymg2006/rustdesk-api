@@ -8,45 +8,45 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ymg2006/rustdesk-api/v2/model"
-	"github.com/ymg2006/rustdesk-api/v2/utils"
 	"github.com/pquerna/otp"
 	"github.com/pquerna/otp/totp"
+	"github.com/ymg2006/rustdesk-api/v2/model"
+	"github.com/ymg2006/rustdesk-api/v2/utils"
 	"gorm.io/gorm"
 )
 
 type UserService struct {
 }
 
-// InfoById 根据用户id取用户信息
+// InfoById gets user information based on user id
 func (us *UserService) InfoById(id uint) *model.User {
 	u := &model.User{}
 	DB.Where("id = ?", id).First(u)
 	return u
 }
 
-// InfoByUsername 根据用户名取用户信息
+// InfoByUsername gets user information based on user name
 func (us *UserService) InfoByUsername(un string) *model.User {
 	u := &model.User{}
 	DB.Where("username = ?", un).First(u)
 	return u
 }
 
-// InfoByEmail 根据邮箱取用户信息
+// InfoByEmail retrieves user information based on email address
 func (us *UserService) InfoByEmail(email string) *model.User {
 	u := &model.User{}
 	DB.Where("email = ?", email).First(u)
 	return u
 }
 
-// InfoByOpenid 根据openid取用户信息
+// InfoByOpenid gets user information based on openid
 func (us *UserService) InfoByOpenid(openid string) *model.User {
 	u := &model.User{}
 	DB.Where("openid = ?", openid).First(u)
 	return u
 }
 
-// InfoByUsernamePassword 根据用户名密码取用户信息
+// InfoByUsernamePassword gets user information based on username and password
 func (us *UserService) InfoByUsernamePassword(username, password string) *model.User {
 	if Config.Ldap.Enable {
 		u, err := AllService.LdapService.Authenticate(username, password)
@@ -72,9 +72,9 @@ func (us *UserService) InfoByUsernamePassword(username, password string) *model.
 	return u
 }
 
-// InfoByAccesstoken 根据accesstoken取用户信息
-// fingerprint 为调用方计算出的来源指纹（IP+User-Agent 哈希）；传空字符串表示跳过校验
-// （用于客户端 rustauth 及公开接口，这些场景不绑定来源）。
+// InfoByAccesstoken gets user information based on accesstoken
+// fingerprint is the source fingerprint calculated by the caller (IP+User-Agent hash); passing an empty string means skipping verification
+// (Used for client rustauth and public interfaces, these scenarios do not bind sources).
 func (us *UserService) InfoByAccessToken(token string, fingerprint string) (*model.User, *model.UserToken) {
 	u := &model.User{}
 	ut := &model.UserToken{}
@@ -85,8 +85,8 @@ func (us *UserService) InfoByAccessToken(token string, fingerprint string) (*mod
 	if ut.ExpiredAt < time.Now().Unix() {
 		return u, ut
 	}
-	// 来源指纹校验：当调用方提供了指纹且记录中也存在指纹时，必须一致，
-	// 否则视为 token 被异地/异设备盗用，拒绝放行（需重新登录）。
+	// Source fingerprint verification: When the caller provides a fingerprint and the fingerprint also exists in the record, it must be consistent.
+	// Otherwise, it will be deemed that the token has been stolen by a different location/different device and will be refused release (you need to log in again).
 	if fingerprint != "" && ut.Fingerprint != "" && fingerprint != ut.Fingerprint {
 		return u, ut
 	}
@@ -94,7 +94,7 @@ func (us *UserService) InfoByAccessToken(token string, fingerprint string) (*mod
 	return u, ut
 }
 
-// GenerateToken 生成token
+// GenerateToken Generate token
 func (us *UserService) GenerateToken(u *model.User) string {
 	if len(Jwt.Key) > 0 {
 		return Jwt.GenerateToken(u.Id)
@@ -102,19 +102,19 @@ func (us *UserService) GenerateToken(u *model.User) string {
 	return utils.Md5(u.Username + time.Now().String())
 }
 
-// Login 登录
+// Login Login
 func (us *UserService) Login(u *model.User, llog *model.LoginLog) *model.UserToken {
 	token := us.GenerateToken(u)
-	// 计算来源指纹（仅 User-Agent），用于后续校验请求来源，防止 token 被盗用。
-	// 注意：不使用 IP，因为在 nginx 反代 / IPv4-IPv6 双栈下，同一会话不同请求的
-	// c.ClientIP() 会变化，导致指纹误判为异地盗用而被拒（403）。
+	// Calculate the source fingerprint (User-Agent only) for subsequent verification of the request source to prevent token theft.
+	// Note: IP is not used because under nginx reverse generation/IPv4-IPv6 dual stack, different requests in the same session
+	// c.ClientIP() will change, causing the fingerprint to be misjudged as being stolen from another place and rejected (403).
 	fp := utils.Md5(llog.UserAgent)
 	ut := &model.UserToken{
-		UserId:     u.Id,
-		Token:      token,
-		DeviceUuid: llog.Uuid,
-		DeviceId:   llog.DeviceId,
-		ExpiredAt:  us.UserTokenExpireTimestamp(),
+		UserId:      u.Id,
+		Token:       token,
+		DeviceUuid:  llog.Uuid,
+		DeviceId:    llog.DeviceId,
+		ExpiredAt:   us.UserTokenExpireTimestamp(),
 		Fingerprint: fp,
 	}
 	DB.Create(ut)
@@ -126,7 +126,7 @@ func (us *UserService) Login(u *model.User, llog *model.LoginLog) *model.UserTok
 	return ut
 }
 
-// CurUser 获取当前用户
+// CurUser gets the current user
 func (us *UserService) CurUser(c *gin.Context) *model.User {
 	user, _ := c.Get("curUser")
 	u, ok := user.(*model.User)
@@ -155,7 +155,7 @@ func (us *UserService) ListByIds(ids []uint) (res []*model.User) {
 	return res
 }
 
-// ListByGroupId 根据组id取用户列表
+// ListByGroupId gets the user list based on the group id
 func (us *UserService) ListByGroupId(groupId, page, pageSize uint) (res *model.UserList) {
 	res = us.List(page, pageSize, func(tx *gorm.DB) {
 		tx.Where("group_id = ?", groupId)
@@ -163,37 +163,37 @@ func (us *UserService) ListByGroupId(groupId, page, pageSize uint) (res *model.U
 	return
 }
 
-// ListIdsByGroupId 根据组id取用户id列表
+// ListIdsByGroupId Get the user ID list based on the group ID
 func (us *UserService) ListIdsByGroupId(groupId uint) (ids []uint) {
 	DB.Model(&model.User{}).Where("group_id = ?", groupId).Pluck("id", &ids)
 	return ids
 
 }
 
-// ListIdAndNameByGroupId 根据组id取用户id和用户名列表
+// ListIdAndNameByGroupId gets the list of user id and user name based on group id
 func (us *UserService) ListIdAndNameByGroupId(groupId uint) (res []*model.User) {
 	DB.Model(&model.User{}).Where("group_id = ?", groupId).Select("id, username").Find(&res)
 	return res
 }
 
-// CheckUserEnable 判断用户是否禁用
+// CheckUserEnable determines whether the user is disabled
 func (us *UserService) CheckUserEnable(u *model.User) bool {
 	return u.Status == model.COMMON_STATUS_ENABLE
 }
 
-// IsUserExpired 判断用户是否已过期
+// IsUserExpired determines whether the user has expired
 func (us *UserService) IsUserExpired(u *model.User) bool {
 	return u.ExpiredAt > 0 && u.ExpiredAt < time.Now().Unix()
 }
 
-// Create 创建
+// Create
 func (us *UserService) Create(u *model.User) error {
 	// The initial username should be formatted, and the username should be unique
 	if us.IsUsernameExists(u.Username) {
 		return errors.New("UsernameExists")
 	}
 	u.Username = us.formatUsername(u.Username)
-	// 设置默认角色
+	// Set default role
 	if u.Role == "" {
 		u.Role = "user"
 	}
@@ -206,7 +206,7 @@ func (us *UserService) Create(u *model.User) error {
 	return res
 }
 
-// GetUuidByToken 根据token和user取uuid
+// GetUuidByToken gets uuid based on token and user
 func (us *UserService) GetUuidByToken(u *model.User, token string) string {
 	ut := &model.UserToken{}
 	err := DB.Where("user_id = ? and token = ?", u.Id, token).First(ut).Error
@@ -216,7 +216,7 @@ func (us *UserService) GetUuidByToken(u *model.User, token string) string {
 	return ut.DeviceUuid
 }
 
-// Logout 退出登录 -> 删除token, 解绑uuid
+// Logout -> delete token, unbind uuid
 func (us *UserService) Logout(u *model.User, token string) error {
 	uuid := us.GetUuidByToken(u, token)
 	err := DB.Where("user_id = ? and token = ?", u.Id, token).Delete(&model.UserToken{}).Error
@@ -229,40 +229,40 @@ func (us *UserService) Logout(u *model.User, token string) error {
 	return nil
 }
 
-// Delete 删除用户和oauth信息
+// Delete delete user and oauth information
 func (us *UserService) Delete(u *model.User) error {
 	userCount := us.getAdminUserCount()
 	if userCount <= 1 && us.IsAdmin(u) {
 		return errors.New("The last admin user cannot be deleted")
 	}
 	tx := DB.Begin()
-	// 删除用户
+	// Delete user
 	if err := tx.Delete(u).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
-	// 删除关联的 OAuth 信息
+	// Delete associated OAuth information
 	if err := tx.Where("user_id = ?", u.Id).Delete(&model.UserThird{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
-	//  删除关联的ab
+	//  Delete associated ab
 	if err := tx.Where("user_id = ?", u.Id).Delete(&model.AddressBook{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
-	//  删除关联的abc
+	//  Delete associated abc
 	if err := tx.Where("user_id = ?", u.Id).Delete(&model.AddressBookCollection{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
-	//  删除关联的abcr
+	//  Delete associated abcr
 	if err := tx.Where("user_id = ?", u.Id).Delete(&model.AddressBookCollectionRule{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 	tx.Commit()
-	// 删除关联的peer
+	// Delete associated peer
 	if err := AllService.PeerService.EraseUserId(u.Id); err != nil {
 		Logger.Warn("User deleted successfully, but failed to unlink peer.")
 		return nil
@@ -270,37 +270,37 @@ func (us *UserService) Delete(u *model.User) error {
 	return nil
 }
 
-// Update 更新
+// Update update
 func (us *UserService) Update(u *model.User) error {
 	currentUser := us.InfoById(u.Id)
-	// 如果当前用户是管理员并且 IsAdmin 不为空，进行检查
+	// Check if the current user is an administrator and IsAdmin is not empty
 	if us.IsAdmin(currentUser) {
 		adminCount := us.getAdminUserCount()
-		// 如果这是唯一的管理员，确保不能禁用或取消管理员权限
+		// If this is the only administrator, make sure administrator privileges cannot be disabled or revoked
 		if adminCount <= 1 && (!us.IsAdmin(u) || u.Status == model.COMMON_STATUS_DISABLED) {
 			return errors.New("The last admin user cannot be disabled or demoted")
 		}
 	}
-	// Updates 会跳过零值字段，用 UpdateColumn 确保 expired_at 能被清空为 0
+	// Updates will skip zero value fields, use UpdateColumn to ensure expired_at can be cleared to 0
 	return DB.Model(u).Updates(u).UpdateColumn("expired_at", u.ExpiredAt).Error
 }
 
-// FlushToken 清空token
+// FlushToken Clear token
 func (us *UserService) FlushToken(u *model.User) error {
 	return DB.Where("user_id = ?", u.Id).Delete(&model.UserToken{}).Error
 }
 
-// FlushTokenByUuid 清空token
+// FlushTokenByUuid clears token
 func (us *UserService) FlushTokenByUuid(uuid string) error {
 	return DB.Where("device_uuid = ?", uuid).Delete(&model.UserToken{}).Error
 }
 
-// FlushTokenByUuids 清空token
+// FlushTokenByUuids Clear token
 func (us *UserService) FlushTokenByUuids(uuids []string) error {
 	return DB.Where("device_uuid in (?)", uuids).Delete(&model.UserToken{}).Error
 }
 
-// UpdatePassword 更新密码
+// UpdatePassword update password
 func (us *UserService) UpdatePassword(u *model.User, password string) error {
 	var err error
 	u.Password, err = utils.EncryptPassword(password)
@@ -315,7 +315,7 @@ func (us *UserService) UpdatePassword(u *model.User, password string) error {
 	return err
 }
 
-// IsAdmin 是否管理员
+// IsAdmin Is it an administrator?
 func (us *UserService) IsAdmin(u *model.User) bool {
 	if u == nil {
 		return false
@@ -323,7 +323,7 @@ func (us *UserService) IsAdmin(u *model.User) bool {
 	if u.Role == "admin" {
 		return true
 	}
-	// 降级兼容旧数据
+	// Downgrade compatibility with old data
 	if u.IsAdmin != nil && *u.IsAdmin {
 		return true
 	}
@@ -338,7 +338,7 @@ func (us *UserService) RouteNames(u *model.User) []string {
 	return model.UserRouteNames
 }
 
-// InfoByOauthId 根据oauth的name和openId取用户信息
+// InfoByOauthId gets user information based on oauth name and openId
 func (us *UserService) InfoByOauthId(op string, openId string) *model.User {
 	ut := AllService.OauthService.UserThirdInfo(op, openId)
 	if ut.Id == 0 {
@@ -351,7 +351,7 @@ func (us *UserService) InfoByOauthId(op string, openId string) *model.User {
 	return u
 }
 
-// RegisterByOauth 注册
+// RegisterByOauth Register
 func (us *UserService) RegisterByOauth(oauthUser *model.OauthUser, op string) (error, *model.User) {
 	Lock.Lock("registerByOauth")
 	defer Lock.UnLock("registerByOauth")
@@ -409,7 +409,7 @@ func (us *UserService) RegisterByOauth(oauthUser *model.OauthUser, op string) (e
 	return nil, user
 }
 
-// GenerateUsernameByOauth 生成用户名
+// GenerateUsernameByOauth generates username
 func (us *UserService) GenerateUsernameByOauth(name string) string {
 	for us.IsUsernameExists(name) {
 		name += strconv.Itoa(rand.Intn(10)) // Append a random digit (0-9)
@@ -429,14 +429,14 @@ func (us *UserService) UserThirdInfo(userId uint, op string) *model.UserThird {
 	return ut
 }
 
-// FindLatestUserIdFromLoginLogByUuid 根据uuid和设备id查找最后登录的用户id
+// FindLatestUserIdFromLoginLogByUuid Find the last logged in user id based on uuid and device id
 func (us *UserService) FindLatestUserIdFromLoginLogByUuid(uuid string, deviceId string) uint {
 	llog := &model.LoginLog{}
 	DB.Where("uuid = ? and device_id = ?", uuid, deviceId).Order("id desc").First(llog)
 	return llog.UserId
 }
 
-// IsPasswordEmptyById 根据用户id判断密码是否为空，主要用于第三方登录的自动注册
+// IsPasswordEmptyById determines whether the password is empty based on the user ID. It is mainly used for automatic registration of third-party logins.
 func (us *UserService) IsPasswordEmptyById(id uint) bool {
 	u := &model.User{}
 	if DB.Where("id = ?", id).First(u).Error != nil {
@@ -445,7 +445,7 @@ func (us *UserService) IsPasswordEmptyById(id uint) bool {
 	return u.Password == ""
 }
 
-// IsPasswordEmptyByUsername 根据用户id判断密码是否为空，主要用于第三方登录的自动注册
+// IsPasswordEmptyByUsername determines whether the password is empty based on the user ID. It is mainly used for automatic registration of third-party logins.
 func (us *UserService) IsPasswordEmptyByUsername(username string) bool {
 	u := &model.User{}
 	if DB.Where("username = ?", username).First(u).Error != nil {
@@ -454,12 +454,12 @@ func (us *UserService) IsPasswordEmptyByUsername(username string) bool {
 	return u.Password == ""
 }
 
-// IsPasswordEmptyByUser 判断密码是否为空，主要用于第三方登录的自动注册
+// IsPasswordEmptyByUser determines whether the password is empty, mainly used for automatic registration of third-party logins
 func (us *UserService) IsPasswordEmptyByUser(u *model.User) bool {
 	return us.IsPasswordEmptyById(u.Id)
 }
 
-// Register 注册, 如果用户名已存在则返回nil
+// Register, if the username already exists, returns nil
 func (us *UserService) Register(username string, email string, password string, status model.StatusCode, expiredAt int64) *model.User {
 	u := &model.User{
 		Username:  username,
@@ -477,7 +477,7 @@ func (us *UserService) Register(username string, email string, password string, 
 }
 
 func (us *UserService) TokenList(page uint, size uint, f func(tx *gorm.DB)) *model.UserTokenList {
-	// 自动删除已过期的 token
+	// Automatically delete expired tokens
 	us.DeleteExpiredUserToken()
 	res := &model.UserTokenList{}
 	res.Page = int64(page)
@@ -502,15 +502,15 @@ func (us *UserService) DeleteToken(l *model.UserToken) error {
 	return DB.Delete(l).Error
 }
 
-// MigrateUserRoles 迁移现有用户的 Role 字段（基于旧 IsAdmin 字段）
+// MigrateUserRoles Migrate the Role field of an existing user (based on the old IsAdmin field)
 func (us *UserService) MigrateUserRoles() {
 	var count int64
 	DB.Model(&model.User{}).Where("role = '' AND is_admin = ?", true).Count(&count)
 	if count > 0 {
-		Logger.Infof("迁移 %d 个旧数据用户角色为管理员", count)
+		Logger.Infof("Migrate%dold data user roles to administrator", count)
 		DB.Model(&model.User{}).Where("role = '' AND is_admin = ?", true).Update("role", "admin")
 	}
-	// 普通用户：role 为空但 is_admin=false 的也补上
+	// Ordinary users: If the role is empty but is_admin=false is also added.
 	DB.Model(&model.User{}).Where("role = '' AND (is_admin = ? OR is_admin IS NULL)", false).Update("role", "user")
 }
 
@@ -535,12 +535,12 @@ func (us *UserService) getAdminUserCount() int64 {
 	return count
 }
 
-// UserTokenExpireTimestamp 生成用户token过期时间
+// UserTokenExpireTimestamp generates user token expiration time
 func (us *UserService) UserTokenExpireTimestamp() int64 {
 	exp := Config.App.TokenExpire
 	if exp == 0 {
-		// 默认两小时。web 后台(BackendUserAuth)不自动续期，到期需重新登录；
-		// 客户端(rustauth)仍走滑动续期，活跃会话不受影响。
+		// The default is two hours. The web background (BackendUserAuth) does not automatically renew, and you need to log in again when it expires;
+		// The client (rustauth) still uses sliding renewal, and active sessions are not affected.
 		exp = 7200
 	}
 	return time.Now().Add(exp).Unix()
@@ -569,7 +569,7 @@ func (us *UserService) VerifyJWT(token string) (uint, error) {
 	return Jwt.ParseToken(token)
 }
 
-// IsUsernameExists 判断用户名是否存在, it will check the internal database and LDAP(if enabled)
+// IsUsernameExists determines whether the username exists, it will check the internal database and LDAP(if enabled)
 func (us *UserService) IsUsernameExists(username string) bool {
 	return us.IsUsernameExistsLocal(username) || AllService.LdapService.IsUsernameExists(username)
 }
@@ -588,7 +588,7 @@ func (us *UserService) IsEmailExistsLdap(email string) bool {
 
 const MfaRecoveryCount = 8
 
-// GenerateMfaRecoveryCodes 生成一次性恢复码
+// GenerateMfaRecoveryCodes generates one-time recovery codes
 func (us *UserService) GenerateMfaRecoveryCodes() []string {
 	codes := make([]string, 0, MfaRecoveryCount)
 	for i := 0; i < MfaRecoveryCount; i++ {
@@ -597,13 +597,13 @@ func (us *UserService) GenerateMfaRecoveryCodes() []string {
 	return codes
 }
 
-// SetMfaSecret 暂存 TOTP 密钥（尚未启用）
+// SetMfaSecret Stages TOTP keys (not yet enabled)
 func (us *UserService) SetMfaSecret(u *model.User, secret string) error {
 	u.MfaSecret = secret
 	return DB.Model(u).Update("mfa_secret", secret).Error
 }
 
-// EnableMfa 启用 MFA 并生成恢复码，返回恢复码列表
+// EnableMfa enables MFA and generates recovery codes, returning the recovery code list
 func (us *UserService) EnableMfa(u *model.User) ([]string, error) {
 	codes := us.GenerateMfaRecoveryCodes()
 	u.MfaEnabled = true
@@ -615,7 +615,7 @@ func (us *UserService) EnableMfa(u *model.User) ([]string, error) {
 	return codes, err
 }
 
-// DisableMfa 关闭 MFA 并清除密钥与恢复码
+// DisableMfa turns off MFA and clears keys and recovery codes
 func (us *UserService) DisableMfa(u *model.User) error {
 	u.MfaEnabled = false
 	u.MfaSecret = ""
@@ -627,17 +627,17 @@ func (us *UserService) DisableMfa(u *model.User) error {
 	}).Error
 }
 
-// defaultMfaTotpSkew 时钟漂移周期数（每个周期 30s）的内置默认值。
-// 当 config.yaml 未配置 mfa_totp_skew 或配置值 <1 时回退到此值（Skew=3 → ±90s）。
-// 标准库 totp.Validate 默认 Skew=1（仅容忍 ±30s）。运维中服务器/客户端时钟偏差、
-// 或用户输码耗时，偶发会踩线失败；这里默认 Skew=3 作为健壮性加固，且可由 config 调整。
-// 注意：若“始终”校验失败，应优先排查 mfa_secret 是否正确落库与时间是否同步，
-// 而非无限制放宽窗口掩盖真正的代码/数据问题。
+// defaultMfaTotpSkew Built-in default value for the number of clock drift periods (30s per period).
+// Fallback to this value (Skew=3 → ±90s) when mfa_totp_skew is not configured in config.yaml or the configuration value is <1.
+// The standard library totp.Validate defaults to Skew=1 (only tolerates ±30s). Server/client clock deviation during operation and maintenance,
+// Or it may take time for the user to enter the code, and occasionally the code will fail; the default Skew=3 is used as a robustness enhancement, and can be adjusted by config.
+// Note: If the "always" verification fails, you should first check whether mfa_secret is correctly dropped into the library and whether the time is synchronized.
+// Instead of unlimited relaxation windows masking real code/data issues.
 const defaultMfaTotpSkew = 3
 
-// mfaSkew 计算最终生效的 TOTP 校验时钟容差（周期数）。
-// 优先使用全局配置 Config.MfaTotpSkew；若配置为空（Config==nil）或配置值 <1（含未配置/0），
-// 则回退到 defaultMfaTotpSkew，保证行为健壮且向后兼容。
+// mfaSkew Calculates the final effective TOTP check clock tolerance (number of cycles).
+// Priority is given to using the global configuration Config.MfaTotpSkew; if the configuration is empty (Config==nil) or the configuration value <1 (including unconfigured/0),
+// Then fall back to defaultMfaTotpSkew to ensure robust behavior and backward compatibility.
 func (us *UserService) mfaSkew() int {
 	if Config != nil && Config.MfaTotpSkew >= 1 {
 		return Config.MfaTotpSkew
@@ -645,12 +645,12 @@ func (us *UserService) mfaSkew() int {
 	return defaultMfaTotpSkew
 }
 
-// VerifyMfaCode 校验 TOTP 动态码
+// VerifyMfaCode Verify TOTP dynamic code
 func (us *UserService) VerifyMfaCode(u *model.User, code string) bool {
-	// secret 为空说明启用流程/Migration 未正确落库，直接拒绝并打告警便于排障，
-	// 避免静默返回 false 让“验证码错误”难以定位根因。
+	// If the secret is empty, it means that the enablement process/Migration is not correctly logged into the library. It is directly rejected and an alarm is issued to facilitate troubleshooting.
+	// Avoid silently returning false to make it difficult to locate the root cause of "verification code error".
 	if u.MfaSecret == "" {
-		Logger.Warnf("[MFA] VerifyMfaCode: u.Id=%d mfa_secret 为空，跳过校验（疑似启用流程/Migration 未落库）", u.Id)
+		Logger.Warnf("[MFA] VerifyMfaCode: u.Id=%d, MFA secret is empty; skipping validation because setup or migration may not have persisted it", u.Id)
 		return false
 	}
 	ok, err := totp.ValidateCustom(code, u.MfaSecret, time.Now().UTC(), totp.ValidateOpts{
@@ -660,13 +660,13 @@ func (us *UserService) VerifyMfaCode(u *model.User, code string) bool {
 		Algorithm: otp.AlgorithmSHA1,
 	})
 	if err != nil {
-		Logger.Warnf("[MFA] VerifyMfaCode: u.Id=%d 校验异常: %v", u.Id, err)
+		Logger.Warnf("[MFA] VerifyMfaCode: u.Id=%d, validation error: %v", u.Id, err)
 		return false
 	}
 	return ok
 }
 
-// VerifyMfaRecovery 校验恢复码并消费（一次性），成功返回 true
+// VerifyMfaRecovery verifies the recovery code and consumes it (one-time), returns true successfully
 func (us *UserService) VerifyMfaRecovery(u *model.User, code string) bool {
 	if u.MfaRecovery == "" {
 		return false

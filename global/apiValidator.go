@@ -24,7 +24,7 @@ import (
 func ApiInitValidator() {
 	validate := validator.New()
 
-	// 定义不同的语言翻译
+	// Define different language translations
 	enT := en.New()
 	cn := zh_Hans_CN.New()
 	koT := ko.New()
@@ -81,7 +81,7 @@ func ApiInitValidator() {
 		return label
 	})
 	Validator.Validate = validate
-	Validator.UT = uni // 存储 Universal Translator
+	Validator.UT = uni // Storage Universal Translator
 	Validator.VTrans = zhTrans
 
 	Validator.ValidStruct = func(ctx *gin.Context, i interface{}) []string {

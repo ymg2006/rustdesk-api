@@ -35,26 +35,26 @@ func (v *Version) List(c *gin.Context) {
 func (v *Version) Create(c *gin.Context) {
 	ver := &model.AppRelease{}
 	if err := c.ShouldBindJSON(ver); err != nil {
-		response.Fail(c, 101, "参数错误")
+		response.Fail(c, 101, response.TranslateMsg(c, "ParamError"))
 		return
 	}
 	if ver.Version == "" {
-		response.Fail(c, 101, "版本号不能为空")
+		response.Fail(c, 101, response.TranslateMsg(c, "VersionRequired"))
 		return
 	}
 	if ver.Platform == "" {
 		ver.Platform = "windows"
 	}
 	if ver.Url == "" {
-		response.Fail(c, 101, "下载链接不能为空")
+		response.Fail(c, 101, response.TranslateMsg(c, "DownloadUrlRequired"))
 		return
 	}
-	// 未传状态时默认启用；已传则尊重前端的设置
+	// It is enabled by default when it is not uploaded; if it has been uploaded, it respects the front-end settings.
 	if ver.Status == 0 {
 		ver.Status = int(model.COMMON_STATUS_ENABLE)
 	}
 	if err := service.AllService.AppReleaseService.Create(ver); err != nil {
-		response.Fail(c, 101, "保存失败: "+err.Error())
+		response.Fail(c, 101, response.TranslateMsg(c, "SaveFailed")+err.Error())
 		return
 	}
 	response.Success(c, nil)
@@ -63,11 +63,11 @@ func (v *Version) Create(c *gin.Context) {
 func (v *Version) Update(c *gin.Context) {
 	ver := &model.AppRelease{}
 	if err := c.ShouldBindJSON(ver); err != nil {
-		response.Fail(c, 101, "参数错误")
+		response.Fail(c, 101, response.TranslateMsg(c, "ParamError"))
 		return
 	}
 	if ver.Id == 0 {
-		response.Fail(c, 101, "ID不能为空")
+		response.Fail(c, 101, response.TranslateMsg(c, "IdRequired"))
 		return
 	}
 	service.AllService.AppReleaseService.Update(ver)
@@ -79,7 +79,7 @@ func (v *Version) Delete(c *gin.Context) {
 		Id uint `json:"id"`
 	}{}
 	if err := c.ShouldBindJSON(form); err != nil || form.Id == 0 {
-		response.Fail(c, 101, "ID不能为空")
+		response.Fail(c, 101, response.TranslateMsg(c, "IdRequired"))
 		return
 	}
 	service.AllService.AppReleaseService.Delete(form.Id)
@@ -92,12 +92,12 @@ func (v *Version) SetEnable(c *gin.Context) {
 		Status int  `json:"status"`
 	}{Status: 1}
 	if err := c.ShouldBindJSON(form); err != nil || form.Id == 0 {
-		response.Fail(c, 101, "ID不能为空")
+		response.Fail(c, 101, response.TranslateMsg(c, "IdRequired"))
 		return
 	}
 	ver := service.AllService.AppReleaseService.FindById(form.Id)
 	if ver == nil || ver.Id == 0 {
-		response.Fail(c, 101, "版本不存在")
+		response.Fail(c, 101, response.TranslateMsg(c, "VersionNotFound"))
 		return
 	}
 	ver.Status = form.Status

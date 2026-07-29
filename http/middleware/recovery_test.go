@@ -10,10 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// TestRecovery_ReturnsGeneric500OnPanic 验证 panic 被兜住时：
-// 1) 返回 HTTP 200（业务 code 500，与全站 5xx 收口一致）；
-// 2) 响应为统一通用文案 {"code":500,"message":"服务器内部错误"}；
-// 3) panic 细节（可能含 SQL/堆栈）不会泄露到响应体。
+// TestRecovery_ReturnsGeneric500OnPanic verifies that when a panic is recovered:
+// 1) HTTP 200 is returned with business code 500, matching the site-wide 5xx envelope;
+// 2) the response uses a generic message;
+// 3) panic details, which may include SQL or stack traces, do not leak into the response body.
 func TestRecovery_ReturnsGeneric500OnPanic(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -37,17 +37,17 @@ func TestRecovery_ReturnsGeneric500OnPanic(t *testing.T) {
 	if body["code"] != float64(500) {
 		t.Errorf("expected code 500, got %v", body["code"])
 	}
-	if body["message"] != "服务器内部错误" {
+	if body["message"] != "Internal server error." {
 		t.Errorf("expected generic message, got %v", body["message"])
 	}
 
-	// 确保 panic 细节没有泄露到响应体
+	// Ensure panic details are not leaked into the response body.
 	if strings.Contains(w.Body.String(), "boom") || strings.Contains(w.Body.String(), "secret") || strings.Contains(w.Body.String(), "SELECT") {
 		t.Errorf("panic details leaked to client: %s", w.Body.String())
 	}
 }
 
-// TestRecovery_PassesThroughWhenNoPanic 验证无 panic 时正常透传。
+// TestRecovery_PassesThroughWhenNoPanic verifies normal pass-through when there is no panic.
 func TestRecovery_PassesThroughWhenNoPanic(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()

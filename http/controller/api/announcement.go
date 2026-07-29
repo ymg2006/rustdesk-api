@@ -9,9 +9,9 @@ import (
 type Announcement struct {
 }
 
-// List 客户端获取公告列表
-// @Tags 公告
-// @Summary 客户端获取公告列表
+// List client obtains the announcement list
+// @Tags Announcement
+// @Summary The client obtains the announcement list
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} response.Response

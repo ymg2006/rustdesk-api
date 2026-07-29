@@ -4,10 +4,10 @@ import (
 	"github.com/ymg2006/rustdesk-api/v2/model"
 )
 
-// ClientDownloadService 客户端下载链接管理
+// ClientDownloadService client download link management
 type ClientDownloadService struct{}
 
-// ActiveList 获取启用的下载列表（公开）
+// ActiveList Gets the enabled download list (public)
 func (s *ClientDownloadService) ActiveList() []*model.ClientDownload {
 	var list []*model.ClientDownload
 	DB.Where("status = ?", model.COMMON_STATUS_ENABLE).
@@ -16,7 +16,7 @@ func (s *ClientDownloadService) ActiveList() []*model.ClientDownload {
 	return list
 }
 
-// List 获取下载列表（管理端，分页）
+// List Get the download list (management side, paging)
 func (s *ClientDownloadService) List(page, pageSize uint) ([]*model.ClientDownload, int64) {
 	var list []*model.ClientDownload
 	var total int64
@@ -25,22 +25,22 @@ func (s *ClientDownloadService) List(page, pageSize uint) ([]*model.ClientDownlo
 	return list, total
 }
 
-// Create 创建下载链接
+// Create Create download link
 func (s *ClientDownloadService) Create(v *model.ClientDownload) {
 	DB.Create(v)
 }
 
-// Update 更新下载链接
+// Update update download link
 func (s *ClientDownloadService) Update(v *model.ClientDownload) {
 	DB.Model(v).Where("id = ?", v.Id).Updates(v)
 }
 
-// Delete 删除下载链接
+// Delete delete download link
 func (s *ClientDownloadService) Delete(id uint) {
 	DB.Delete(&model.ClientDownload{}, id)
 }
 
-// FindById 根据ID查找
+// FindById Find by ID
 func (s *ClientDownloadService) FindById(id uint) *model.ClientDownload {
 	var v model.ClientDownload
 	DB.Where("id = ?", id).First(&v)

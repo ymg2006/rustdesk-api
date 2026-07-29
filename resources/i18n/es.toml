@@ -48,6 +48,46 @@ description = "System error."
 one = "Error del sistema."
 other = "Error del sistema."
 
+[MfaRequired]
+description = "MFA required."
+one = "Se requiere autenticación multifactor (MFA), introduzca el código de verificación."
+other = "Se requiere autenticación multifactor (MFA), introduzca el código de verificación."
+
+[MfaTokenInvalid]
+description = "MFA token invalid."
+one = "La verificación MFA ha caducado, inicie sesión de nuevo."
+other = "La verificación MFA ha caducado, inicie sesión de nuevo."
+
+[MfaCodeError]
+description = "MFA code error."
+one = "Código de verificación no válido, inténtelo de nuevo."
+other = "Código de verificación no válido, inténtelo de nuevo."
+
+[MfaTokenMissing]
+description = "MFA token missing from request."
+one = "Falta el token MFA o ha caducado, vuelva al inicio de sesión e inténtelo de nuevo."
+other = "Falta el token MFA o ha caducado, vuelva al inicio de sesión e inténtelo de nuevo."
+
+[MfaSecretEmpty]
+description = "MFA secret empty."
+one = "Genere primero el secreto MFA."
+other = "Genere primero el secreto MFA."
+
+[PasswordError]
+description = "Password error."
+one = "Contraseña incorrecta."
+other = "Contraseña incorrecta."
+
+[MfaEnabled]
+description = "MFA enabled."
+one = "Autenticación multifactor activada."
+other = "Autenticación multifactor activada."
+
+[MfaDisabled]
+description = "MFA disabled."
+one = "Autenticación multifactor desactivada."
+other = "Autenticación multifactor desactivada."
+
 [ConfigNotFound]
 description = "Config not found."
 one = "Configuración no encontrada."
@@ -167,3 +207,304 @@ other = "Prohibido."
 description = "Register success, wait admin confirm."
 one = "Registro exitoso, espere la confirmación del administrador."
 other = "Registro exitoso, espere la confirmación del administrador."
+
+[ParentDeptNotFound]
+description = "Parent department not found."
+one = "Departamento superior no encontrado."
+other = "Departamento superior no encontrado."
+
+[DeptCycleError]
+description = "Department hierarchy cycle detected."
+one = "No se puede seleccionar a sí mismo ni a un subdepartamento como departamento superior."
+other = "No se puede seleccionar a sí mismo ni a un subdepartamento como departamento superior."
+
+[DeptHasChildren]
+description = "Department has sub-departments."
+one = "No se puede eliminar un departamento que tiene subdepartamentos."
+other = "No se puede eliminar un departamento que tiene subdepartamentos."
+
+[DeptHasUsers]
+description = "Department has members."
+one = "No se puede eliminar un departamento que tiene miembros."
+other = "No se puede eliminar un departamento que tiene miembros."
+
+[AccountExpired]
+description = "Account expired."
+one = "La cuenta ha caducado, contacte con el administrador."
+other = "La cuenta ha caducado, contacte con el administrador."
+
+[InviteCodeRequired]
+description = "Invite code required."
+one = "Se requiere un código de invitación para registrarse."
+other = "Se requiere un código de invitación para registrarse."
+
+[InviteCodeInvalid]
+description = "Invite code invalid."
+one = "El código de invitación no es válido o ha caducado."
+other = "El código de invitación no es válido o ha caducado."
+
+[UserDisabled]
+description = "User disabled."
+one = "El usuario ha sido deshabilitado."
+other = "El usuario ha sido deshabilitado."
+
+[ServerInternalError]
+description = "Internal server error."
+one = "Error interno del servidor."
+other = "Error interno del servidor."
+
+[ParamError]
+description = "Parameter error."
+one = "Error de parámetro."
+other = "Error de parámetro."
+
+[FieldRequired]
+description = "Field required."
+one = "{{.P0}} es obligatorio."
+other = "{{.P0}} es obligatorio."
+
+[ShareTokenRequired]
+description = "Share token required."
+one = "Se requiere el token para compartir."
+other = "Se requiere el token para compartir."
+
+[ShareNotFound]
+description = "Share not found."
+one = "Recurso compartido no encontrado."
+other = "Recurso compartido no encontrado."
+
+[ShareExpired]
+description = "Share expired."
+one = "El recurso compartido ha caducado."
+other = "El recurso compartido ha caducado."
+
+[PeerNotFound]
+description = "Peer not found."
+one = "Dispositivo no encontrado."
+other = "Dispositivo no encontrado."
+
+[PermissionDenied]
+description = "Permission denied."
+one = "Permiso denegado."
+other = "Permiso denegado."
+
+[MissingOutTradeNo]
+description = "Missing out_trade_no."
+one = "Falta out_trade_no."
+other = "Falta out_trade_no."
+
+[AuthorizationInProgress]
+description = "Authorization in progress."
+one = "Autorización en curso, inicie sesión y vincule."
+other = "Autorización en curso, inicie sesión y vincule."
+
+[NoAuthedOidcFound]
+description = "No authorized OIDC found."
+one = "No se encontró una sesión OIDC autorizada."
+other = "No se encontró una sesión OIDC autorizada."
+
+[Unauthorized]
+description = "Unauthorized."
+one = "No autorizado."
+other = "No autorizado."
+
+[InvalidRustdeskKey]
+description = "Invalid RustDesk key."
+one = "Clave de RustDesk no válida."
+other = "Clave de RustDesk no válida."
+
+[NameRequired]
+description = "Name required."
+one = "Introduzca un nombre."
+other = "Introduzca un nombre."
+
+[ChannelNameRequired]
+description = "Channel name required."
+one = "Introduzca el nombre del canal."
+other = "Introduzca el nombre del canal."
+
+[SaveFailed]
+description = "Save failed."
+one = "Error al guardar."
+other = "Error al guardar."
+
+[SendFailed]
+description = "Send failed."
+one = "Error al enviar."
+other = "Error al enviar."
+
+[RecordNotFound]
+description = "Record not found."
+one = "Registro no encontrado."
+other = "Registro no encontrado."
+
+[ChannelInUse]
+description = "Channel in use."
+one = "Este canal está en uso por reglas de alerta y no se puede eliminar."
+other = "Este canal está en uso por reglas de alerta y no se puede eliminar."
+
+[ChannelTypeMissing]
+description = "Channel type missing."
+one = "Falta el tipo de canal."
+other = "Falta el tipo de canal."
+
+[SelectNotifyChannel]
+description = "Select notification channel."
+one = "Seleccione un canal de notificación."
+other = "Seleccione un canal de notificación."
+
+[NotifyChannelNotFound]
+description = "Notification channel not found."
+one = "Canal de notificación no encontrado."
+other = "Canal de notificación no encontrado."
+
+[IdRequired]
+description = "ID required."
+one = "Se requiere ID."
+other = "Se requiere ID."
+
+[VersionRequired]
+description = "Version required."
+one = "Se requiere el número de versión."
+other = "Se requiere el número de versión."
+
+[DownloadUrlRequired]
+description = "Download URL required."
+one = "Se requiere el enlace de descarga."
+other = "Se requiere el enlace de descarga."
+
+[VersionNotFound]
+description = "Version not found."
+one = "Versión no encontrada."
+other = "Versión no encontrada."
+
+[NameAndDownloadUrlRequired]
+description = "Name and download URL required."
+one = "El nombre y la dirección de descarga son obligatorios."
+other = "El nombre y la dirección de descarga son obligatorios."
+
+[AnnouncementNotFound]
+description = "Announcement not found."
+one = "Anuncio no encontrado."
+other = "Anuncio no encontrado."
+
+[TitleRequired]
+description = "Title required."
+one = "Se requiere el título."
+other = "Se requiere el título."
+
+[UnsupportedOnlineRestart]
+description = "Unsupported online restart."
+one = "El reinicio en línea del servicio no es compatible con la plataforma actual. Reinicie el proceso manualmente."
+other = "El reinicio en línea del servicio no es compatible con la plataforma actual. Reinicie el proceso manualmente."
+
+[ConfigPathUnknown]
+description = "Config path unknown."
+one = "La ruta del archivo de configuración es desconocida."
+other = "La ruta del archivo de configuración es desconocida."
+
+[ReadConfigFailed]
+description = "Read config failed."
+one = "Error al leer el archivo de configuración."
+other = "Error al leer el archivo de configuración."
+
+[WriteConfigFailed]
+description = "Write config failed."
+one = "Error al escribir el archivo de configuración."
+other = "Error al escribir el archivo de configuración."
+
+[ConfigFormatInvalid]
+description = "Invalid config format."
+one = "Formato de configuración no válido, revise la entrada."
+other = "Formato de configuración no válido, revise la entrada."
+
+[ConfigYamlInvalid]
+description = "Invalid YAML config."
+one = "Formato de configuración no válido (falló el análisis YAML), revise la sintaxis YAML."
+other = "Formato de configuración no válido (falló el análisis YAML), revise la sintaxis YAML."
+
+[UnsupportedDbType]
+description = "Unsupported database type."
+one = "Tipo de base de datos no compatible."
+other = "Tipo de base de datos no compatible."
+
+[ExportDbFailed]
+description = "Export database failed."
+one = "Error al exportar la base de datos."
+other = "Error al exportar la base de datos."
+
+[InvalidId]
+description = "Invalid ID."
+one = "ID no válido."
+other = "ID no válido."
+
+[SubscriptionExpired]
+description = "Subscription expired."
+one = "La suscripción ha caducado."
+other = "La suscripción ha caducado."
+
+[OrderNotFound]
+description = "Order not found."
+one = "Pedido no encontrado."
+other = "Pedido no encontrado."
+
+[OrderNotPaid]
+description = "Order not paid."
+one = "El pedido no ha sido pagado."
+other = "El pedido no ha sido pagado."
+
+[CodeNotFound]
+description = "Code not found."
+one = "Código no encontrado."
+other = "Código no encontrado."
+
+[CodeUsed]
+description = "Code used."
+one = "El código ya ha sido usado."
+other = "El código ya ha sido usado."
+
+[CodeRevoked]
+description = "Code revoked."
+one = "El código ha sido revocado."
+other = "El código ha sido revocado."
+
+[CodeExpired]
+description = "Code expired."
+one = "El código ha caducado."
+other = "El código ha caducado."
+
+[LoginFailed]
+description = "Login failed."
+one = "Error al iniciar sesión."
+other = "Error al iniciar sesión."
+
+[UserNotFound]
+description = "User not found."
+one = "Usuario no encontrado."
+other = "Usuario no encontrado."
+
+[LoginBanned]
+description = "Login banned."
+one = "El inicio de sesión está bloqueado."
+other = "El inicio de sesión está bloqueado."
+
+[NoCaptchaRequired]
+description = "No captcha required."
+one = "No se requiere captcha."
+other = "No se requiere captcha."
+
+[RequiredFields]
+description = "Required fields missing."
+one = "Faltan campos obligatorios: {{.P0}}."
+other = "Faltan campos obligatorios: {{.P0}}."
+
+[InvalidSourceType]
+description = "Invalid source type."
+one = "Tipo de origen no válido. Valores admitidos: device_group / ab_tags."
+other = "Tipo de origen no válido. Valores admitidos: device_group / ab_tags."
+
+[CleanupYearsInvalid]
+description = "Invalid cleanup years."
+one = "Parámetros no válidos. Solo se pueden limpiar mensajes con más de 1 o 3 años."
+other = "Parámetros no válidos. Solo se pueden limpiar mensajes con más de 1 o 3 años."
+

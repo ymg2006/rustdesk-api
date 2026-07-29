@@ -6,11 +6,11 @@ import (
 	"time"
 )
 
-// TimeField 可空时间字段，用于 GORM 中 *TimeField 指针形式的可空时间戳。
-// 内部存储为 Unix 时间戳（秒），JSON 序列化为 ISO8601 格式。
+// TimeField Nullable time field, used for nullable timestamps in the form of *TimeField pointers in GORM.
+// Internally stored as Unix timestamp in seconds, JSON serialized to ISO8601 format.
 type TimeField time.Time
 
-// Scan 实现 sql.Scanner 接口
+// Scan implements the sql.Scanner interface
 func (t *TimeField) Scan(src interface{}) error {
 	if src == nil {
 		return nil
@@ -43,12 +43,12 @@ func (t *TimeField) Scan(src interface{}) error {
 	return nil
 }
 
-// Value 实现 driver.Valuer 接口
+// Value implements the driver.Valuer interface
 func (t TimeField) Value() (driver.Value, error) {
 	return time.Time(t), nil
 }
 
-// MarshalJSON 实现 json.Marshaler
+// MarshalJSON implements json.Marshaler
 func (t TimeField) MarshalJSON() ([]byte, error) {
 	tt := time.Time(t)
 	if tt.IsZero() {
@@ -57,7 +57,7 @@ func (t TimeField) MarshalJSON() ([]byte, error) {
 	return tt.MarshalJSON()
 }
 
-// UnmarshalJSON 实现 json.Unmarshaler
+// UnmarshalJSON implements json.Unmarshaler
 func (t *TimeField) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		return nil
@@ -70,7 +70,7 @@ func (t *TimeField) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Time 返回 time.Time
+// Time returns time.Time
 func (t TimeField) Time() time.Time {
 	return time.Time(t)
 }

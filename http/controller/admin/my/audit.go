@@ -13,7 +13,7 @@ import (
 type Audit struct {
 }
 
-// List 普通用户的远程连接记录列表
+// List List of remote connection records for ordinary users
 func (a *Audit) List(c *gin.Context) {
 	query := &admin.AuditQuery{}
 	if err := c.ShouldBindQuery(query); err != nil {
@@ -66,10 +66,10 @@ func (a *Audit) List(c *gin.Context) {
 			closeTimeStr = time.Unix(conn.CloseTime, 0).Format("2006-01-02 15:04:05")
 		}
 		enriched = append(enriched, &ConnEntry{
-			AuditConn:     *conn,
-			PeerHostname:  h.Hostname,
-			PeerAlias:     h.Alias,
-			CloseTimeStr:  closeTimeStr,
+			AuditConn:    *conn,
+			PeerHostname: h.Hostname,
+			PeerAlias:    h.Alias,
+			CloseTimeStr: closeTimeStr,
 		})
 	}
 	if enriched == nil {

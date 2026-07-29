@@ -1,15 +1,15 @@
 package model
 
-// Strategy 远程策略配置
-// bind_type: user=绑定用户, group=绑定设备分组, tag=绑定标签, global=全局
+// Strategy remote strategy configuration
+// bind_type: user=bind user, group=bind device group, tag=bind tag, global=global
 type Strategy struct {
 	IdModel
-	Name        string `json:"name" gorm:"type:varchar(100);default:'';not null;comment:'策略名称'"`
-	ConfigItems string `json:"config_items" gorm:"type:text;comment:'key=value 多行配置'"`
-	Priority    int    `json:"priority" gorm:"type:int;default:0;comment:'优先级，数字越大越优先'"`
-	Status      int    `json:"status" gorm:"type:tinyint;default:1;comment:'1=启用 2=禁用'"`
+	Name        string `json:"name" gorm:"type:varchar(100);default:'';not null;comment:'Strategy name'"`
+	ConfigItems string `json:"config_items" gorm:"type:text;comment:'key=value multi-line configuration'"`
+	Priority    int    `json:"priority" gorm:"type:int;default:0;comment:'Priority, the larger the number, the priority'"`
+	Status      int    `json:"status" gorm:"type:tinyint;default:1;comment:'1=enable 2=disable'"`
 	BindType    string `json:"bind_type" gorm:"type:varchar(16);default:'global';comment:'user/group/tag/global'"`
-	BindId      uint   `json:"bind_id" gorm:"default:0;not null;index;comment:'策略绑定的用户/设备分组/标签ID, global时为0'"`
+	BindId      uint   `json:"bind_id" gorm:"default:0;not null;index;comment:'User/device group/tag ID bound to the policy, 0 for global'"`
 	TimeModel
 }
 
@@ -22,9 +22,8 @@ type StrategyList struct {
 	Pagination
 }
 
-// StrategyOptions 心跳下发的策略配置，与客户端 StrategyOptions 对应
+// StrategyOptions The strategy configuration for heartbeat delivery, corresponding to the client StrategyOptions
 type StrategyOptions struct {
 	ConfigOptions map[string]string `json:"config_options"`
 	Extra         map[string]string `json:"extra,omitempty"`
 }
-

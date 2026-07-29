@@ -28,7 +28,7 @@ type peerOut struct {
 	Overrides map[string]interface{} `json:"overrides"`
 }
 
-// RuleList 列出所有管理员共享的监控规则，集合规则附带关联的设备与覆盖配置
+// RuleList lists the monitoring rules shared by all administrators. The set rules come with associated devices and overlay configurations.
 func (c *ProcessMonitor) RuleList(ctx *gin.Context) {
 	var rules []model.ProcessMonitorRule
 	service.DB.Order("source_type, created_at desc").Find(&rules)
@@ -37,8 +37,8 @@ func (c *ProcessMonitor) RuleList(ctx *gin.Context) {
 	for _, r := range rules {
 		ro := ruleOut{ProcessMonitorRule: r, Peers: []peerOut{}}
 		if r.SourceType == "device_group" || r.SourceType == "ab_tags" {
-			// 成员关系动态解析：直接反映设备当前所属设备组 / 地址簿标签，
-			// 不再依赖创建时写入 ProcessMonitorRulePeer 的静态快照
+			// Dynamic analysis of membership relationships: directly reflects the device group/address book label to which the device currently belongs,
+			// No more reliance on static snapshots written to ProcessMonitorRulePeer on creation
 			var gid uint
 			var tags []string
 			if r.SourceType == "device_group" {
@@ -64,11 +64,11 @@ func (c *ProcessMonitor) RuleList(ctx *gin.Context) {
 	response.Success(ctx, gin.H{"list": out})
 }
 
-// RuleCreate 新建单设备监控规则（手动输入模式）
+// RuleCreate creates a new single device monitoring rule (manual input mode)
 func (c *ProcessMonitor) RuleCreate(ctx *gin.Context) {
 	f := &model.ProcessMonitorRule{}
 	if err := ctx.ShouldBindJSON(f); err != nil || f.PeerId == "" || f.Target == "" {
-		response.Fail(ctx, 101, "参数错误：peer_id 与 target 必填")
+		response.Fail(ctx, 101, response.TranslateParamMsg(ctx, "RequiredFields", "peer_id, target"))
 		return
 	}
 	if f.Type != "process" && f.Type != "port" {
@@ -80,17 +80,17 @@ func (c *ProcessMonitor) RuleCreate(ctx *gin.Context) {
 	if f.DownThreshold <= 0 {
 		f.DownThreshold = 300
 	}
-	f.UserId = 0 // 0 表示管理员共享
+	f.UserId = 0 // 0 means administrator sharing
 	f.SourceType = "peers"
 	f.SourceId = f.PeerId
 	if err := service.DB.Create(f).Error; err != nil {
-		response.Fail(ctx, 500, "保存失败："+err.Error())
+		response.Fail(ctx, 500, "Save failed:"+err.Error())
 		return
 	}
 	response.Success(ctx, f)
 }
 
-// RuleUpdate 更新监控规则（父规则字段 + 集合规则的子设备覆盖配置）
+// RuleUpdate updates monitoring rules (parent rule fields + child device override configuration of collection rules)
 func (c *ProcessMonitor) RuleUpdate(ctx *gin.Context) {
 	f := &struct {
 		RowId         uint      `json:"row_id"`
@@ -104,13 +104,13 @@ func (c *ProcessMonitor) RuleUpdate(ctx *gin.Context) {
 		Peers         []peerOut `json:"peers"`
 	}{}
 	if err := ctx.ShouldBindJSON(f); err != nil || f.RowId == 0 {
-		response.Fail(ctx, 101, "参数错误")
+		response.Fail(ctx, 101, response.TranslateMsg(ctx, "ParamError"))
 		return
 	}
 	var existing model.ProcessMonitorRule
 	service.DB.Where("row_id = ?", f.RowId).First(&existing)
 	if existing.RowId == 0 {
-		response.Fail(ctx, 101, "规则不存在")
+		response.Fail(ctx, 101, "rules do not exist")
 		return
 	}
 
@@ -135,12 +135,12 @@ func (c *ProcessMonitor) RuleUpdate(ctx *gin.Context) {
 				if p.PeerId == "" {
 					continue
 				}
-			ov := custom_types.AutoJson([]byte("{}"))
-			if p.Overrides != nil {
-				b, _ := json.Marshal(p.Overrides)
-				ov = custom_types.AutoJson(b)
-			}
-			rp := &model.ProcessMonitorRulePeer{RuleId: f.RowId, PeerId: p.PeerId, Overrides: ov}
+				ov := custom_types.AutoJson([]byte("{}"))
+				if p.Overrides != nil {
+					b, _ := json.Marshal(p.Overrides)
+					ov = custom_types.AutoJson(b)
+				}
+				rp := &model.ProcessMonitorRulePeer{RuleId: f.RowId, PeerId: p.PeerId, Overrides: ov}
 				if err := tx.Create(rp).Error; err != nil {
 					return err
 				}
@@ -149,19 +149,19 @@ func (c *ProcessMonitor) RuleUpdate(ctx *gin.Context) {
 		return nil
 	})
 	if err != nil {
-		response.Fail(ctx, 500, "保存失败："+err.Error())
+		response.Fail(ctx, 500, "Save failed:"+err.Error())
 		return
 	}
 	response.Success(ctx, nil)
 }
 
-// RuleDelete 删除监控规则（同时清理状态与集合规则子表）
+// RuleDelete deletes monitoring rules (cleans the status and collection rule subtables at the same time)
 func (c *ProcessMonitor) RuleDelete(ctx *gin.Context) {
 	form := &struct {
 		Id uint `json:"id"`
 	}{}
 	if err := ctx.ShouldBindJSON(form); err != nil || form.Id == 0 {
-		response.Fail(ctx, 101, "ID不能为空")
+		response.Fail(ctx, 101, response.TranslateMsg(ctx, "IdRequired"))
 		return
 	}
 	service.DB.Where("row_id = ?", form.Id).Delete(&model.ProcessMonitorRule{})
@@ -170,7 +170,7 @@ func (c *ProcessMonitor) RuleDelete(ctx *gin.Context) {
 	response.Success(ctx, nil)
 }
 
-// StatusList 查看各设备监控项实时状态（可按 peer_id 过滤）
+// StatusList View the real-time status of each device monitoring item (can be filtered by peer_id)
 func (c *ProcessMonitor) StatusList(ctx *gin.Context) {
 	peerId := ctx.Query("peer_id")
 	var list []model.ProcessMonitorStatus
@@ -182,7 +182,7 @@ func (c *ProcessMonitor) StatusList(ctx *gin.Context) {
 	response.Success(ctx, gin.H{"list": list})
 }
 
-// PeerSources 返回可用于批量选择设备的来源：设备组 + 地址簿标签
+// PeerSources Returns the sources available for bulk selection of devices: device group + address book label
 func (c *ProcessMonitor) PeerSources(ctx *gin.Context) {
 	u := service.AllService.UserService.CurUser(ctx)
 
@@ -232,7 +232,7 @@ func (c *ProcessMonitor) PeerSources(ctx *gin.Context) {
 	response.Success(ctx, gin.H{"device_groups": groups, "ab_tags": tagList})
 }
 
-// resolvePeerIds 根据来源解析目标设备ID集合（去重）
+// resolvePeerIds resolves the target device ID set based on the source (removes duplication)
 func (c *ProcessMonitor) resolvePeerIds(ctx *gin.Context, sourceType string, peerIds []string, groupId uint, tags []string) []string {
 	set := make(map[string]struct{})
 	add := func(id string) {
@@ -286,7 +286,7 @@ func (c *ProcessMonitor) resolvePeerIds(ctx *gin.Context, sourceType string, pee
 	return result
 }
 
-// resolveSourceName 根据来源类型与ID解析展示名称
+// resolveSourceName resolves display name based on source type and ID
 func (c *ProcessMonitor) resolveSourceName(sourceType string, sourceId string, groupId uint, tags []string) string {
 	switch sourceType {
 	case "device_group":
@@ -301,7 +301,7 @@ func (c *ProcessMonitor) resolveSourceName(sourceType string, sourceId string, g
 	return ""
 }
 
-// RuleBatchCreate 按设备组 / 地址簿标签创建集合规则（一条规则对应一个集合）
+// RuleBatchCreate creates collection rules by device group/address book label (one rule corresponds to one collection)
 func (c *ProcessMonitor) RuleBatchCreate(ctx *gin.Context) {
 	form := &struct {
 		SourceType    string   `json:"source_type"` // device_group | ab_tags
@@ -316,11 +316,11 @@ func (c *ProcessMonitor) RuleBatchCreate(ctx *gin.Context) {
 		Enabled       int      `json:"enabled"`
 	}{}
 	if err := ctx.ShouldBindJSON(form); err != nil || form.Target == "" {
-		response.Fail(ctx, 101, "参数错误：target 必填")
+		response.Fail(ctx, 101, response.TranslateParamMsg(ctx, "FieldRequired", "target"))
 		return
 	}
 	if form.SourceType != "device_group" && form.SourceType != "ab_tags" {
-		response.Fail(ctx, 101, "参数错误：source_type 仅支持 device_group / ab_tags")
+		response.Fail(ctx, 101, response.TranslateMsg(ctx, "InvalidSourceType"))
 		return
 	}
 	if form.Type != "process" && form.Type != "port" {
@@ -336,23 +336,23 @@ func (c *ProcessMonitor) RuleBatchCreate(ctx *gin.Context) {
 	var sourceId string
 	if form.SourceType == "device_group" {
 		if form.GroupId == 0 {
-			response.Fail(ctx, 101, "请选择设备组")
+			response.Fail(ctx, 101, "Please select a device group")
 			return
 		}
 		sourceId = fmt.Sprintf("%d", form.GroupId)
 	} else {
 		if len(form.Tags) == 0 {
-			response.Fail(ctx, 101, "请选择地址簿标签")
+			response.Fail(ctx, 101, "Please select the address book label")
 			return
 		}
-		// 标签集合排序后拼接，保证同一批标签的 source_id 一致
+		// The label collection is sorted and then spliced ​​to ensure that the source_id of the same batch of labels is consistent.
 		sort.Strings(form.Tags)
 		sourceId = strings.Join(form.Tags, ",")
 	}
 
 	peerIds := c.resolvePeerIds(ctx, form.SourceType, nil, form.GroupId, form.Tags)
 	if len(peerIds) == 0 {
-		response.Fail(ctx, 101, "未匹配到任何设备")
+		response.Fail(ctx, 101, "No devices matched")
 		return
 	}
 
@@ -361,7 +361,7 @@ func (c *ProcessMonitor) RuleBatchCreate(ctx *gin.Context) {
 		form.SourceType, sourceId, form.Type, form.Target).First(&rule)
 
 	if rule.RowId > 0 {
-		// 已存在同集合规则，更新父规则并追加新设备
+		// The same set of rules already exists, update the parent rule and add new devices
 		created, skipped := 0, 0
 		err := service.DB.Transaction(func(tx *gorm.DB) error {
 			updates := map[string]interface{}{
@@ -385,25 +385,25 @@ func (c *ProcessMonitor) RuleBatchCreate(ctx *gin.Context) {
 					skipped++
 					continue
 				}
-			rp := &model.ProcessMonitorRulePeer{RuleId: rule.RowId, PeerId: pid, Overrides: custom_types.AutoJson([]byte("{}"))}
-			if err := tx.Create(rp).Error; err != nil {
-				return err
-			}
-			created++
+				rp := &model.ProcessMonitorRulePeer{RuleId: rule.RowId, PeerId: pid, Overrides: custom_types.AutoJson([]byte("{}"))}
+				if err := tx.Create(rp).Error; err != nil {
+					return err
+				}
+				created++
 			}
 			return nil
 		})
 		if err != nil {
-			response.Fail(ctx, 500, "保存失败："+err.Error())
+			response.Fail(ctx, 500, "Save failed:"+err.Error())
 			return
 		}
 		response.Success(ctx, gin.H{"created": created, "skipped": skipped, "matched": len(peerIds)})
 		return
 	}
 
-	// 新建集合规则
+	// Create new collection rules
 	rule = model.ProcessMonitorRule{
-		UserId:        0, // 0 表示管理员共享
+		UserId:        0, // 0 means administrator sharing
 		SourceType:    form.SourceType,
 		SourceId:      sourceId,
 		SourceName:    c.resolveSourceName(form.SourceType, sourceId, form.GroupId, form.Tags),
@@ -428,7 +428,7 @@ func (c *ProcessMonitor) RuleBatchCreate(ctx *gin.Context) {
 		return nil
 	})
 	if err != nil {
-		response.Fail(ctx, 500, "保存失败："+err.Error())
+		response.Fail(ctx, 500, "Save failed:"+err.Error())
 		return
 	}
 	response.Success(ctx, gin.H{"created": len(peerIds), "skipped": 0, "matched": len(peerIds)})

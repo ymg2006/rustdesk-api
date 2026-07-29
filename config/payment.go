@@ -1,59 +1,59 @@
 package config
 
-// PaymentConfig 码支付配置（自我实现，无外部平台依赖）
+// PaymentConfig configures QR-code based payments implemented locally without depending on an external platform.
 type PaymentConfig struct {
-	// Enable 是否启用码支付
+	// Enable controls whether QR-code payment is enabled.
 	Enable bool `mapstructure:"enable" yaml:"enable"`
-	// SecretKey 签名密钥（用于回调通知验签）
+	// SecretKey is the signing key used to verify callback notifications.
 	SecretKey string `mapstructure:"secret_key" yaml:"secret_key"`
-	// NotifyURL 异步回调通知地址（支付确认工具调用）
+	// NotifyURL is the asynchronous callback URL used by the payment confirmation tool.
 	NotifyURL string `mapstructure:"notify_url" yaml:"notify_url"`
-	// OrderExpireSec 订单未支付自动关闭时间（秒），默认 600
+	// OrderExpireSec is the unpaid-order auto-close timeout in seconds. Default: 600.
 	OrderExpireSec int `mapstructure:"order_expire_sec" yaml:"order_expire_sec"`
 
-	// Cashier 收银台展示配置
+	// Cashier configures checkout-page display settings.
 	Cashier CashierConfig `mapstructure:"cashier" yaml:"cashier"`
 }
 
-// CashierConfig 收银台展示
+// CashierConfig configures checkout-page display settings.
 type CashierConfig struct {
-	// SiteName 站点名称，在收银台页面上方显示
+	// SiteName is displayed at the top of the checkout page.
 	SiteName string `mapstructure:"site_name" yaml:"site_name"`
-	// AlipayQR 支付宝收款码图片路径（相对 resources/ 或绝对路径）
+	// AlipayQR is the Alipay payment QR image path, relative to resources/ or absolute.
 	AlipayQR string `mapstructure:"alipay_qr" yaml:"alipay_qr"`
-	// WechatQR 微信收款码图片路径
+	// WechatQR is the WeChat payment QR image path.
 	WechatQR string `mapstructure:"wechat_qr" yaml:"wechat_qr"`
-	// MonitorTip 收款确认方式的提示文案
+	// MonitorTip is the message explaining how payment confirmation works.
 	MonitorTip string `mapstructure:"monitor_tip" yaml:"monitor_tip"`
 }
 
-// PlanOption 套餐时长选项
+// PlanOption defines one subscription duration option.
 type PlanOption struct {
-	// Key 标识键，前端传此值
+	// Key is the identifier passed by the frontend.
 	Key string `mapstructure:"key" yaml:"key"`
-	// Name 显示名称，如"1个月"、"3个月"
+	// Name is the display name, for example "1 month" or "3 months".
 	Name string `mapstructure:"name" yaml:"name"`
-	// PriceCents 价格（分）
+	// PriceCents is the price in cents.
 	PriceCents int64 `mapstructure:"price_cents" yaml:"price_cents"`
-	// PeriodDays 订阅周期天数
+	// PeriodDays is the subscription duration in days.
 	PeriodDays int `mapstructure:"period_days" yaml:"period_days"`
 }
 
-// SubscriptionConfig 订阅套餐配置
+// SubscriptionConfig configures subscription plans.
 type SubscriptionConfig struct {
-	// Plan 套餐标识
+	// Plan is the plan identifier.
 	Plan string `mapstructure:"plan" yaml:"plan"`
-	// Plans 可选时长列表
+	// Plans is the list of available duration options.
 	Plans []PlanOption `mapstructure:"plans" yaml:"plans"`
-	// PriceCents 兼容旧配置，单一定价时使用
+	// PriceCents is kept for backward compatibility and is used for single-price configurations.
 	PriceCents int64 `mapstructure:"price_cents" yaml:"price_cents"`
-	// PeriodDays 兼容旧配置，单一时长时使用
+	// PeriodDays is kept for backward compatibility and is used for single-duration configurations.
 	PeriodDays int `mapstructure:"period_days" yaml:"period_days"`
-	// RemindDays 临期提醒天数列表（前端用）
+	// RemindDays lists reminder days before expiration for frontend use.
 	RemindDays []int `mapstructure:"remind_days" yaml:"remind_days"`
 }
 
-// LookupPlan 按 key 查找 PlanOption，找不到返回 nil
+// LookupPlan finds a PlanOption by key and returns nil when none is found.
 func (sc *SubscriptionConfig) LookupPlan(key string) *PlanOption {
 	if key == "" && len(sc.Plans) > 0 {
 		return &sc.Plans[0]

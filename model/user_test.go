@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// TestSubscriptionStatus_None 测试从未订阅状态
+// TestSubscriptionStatus_None test never subscribed status
 func TestSubscriptionStatus_None(t *testing.T) {
 	u := &User{}
 	if status := u.SubscriptionStatus(); status != "none" {
@@ -19,7 +19,7 @@ func TestSubscriptionStatus_None(t *testing.T) {
 	}
 }
 
-// TestSubscriptionStatus_Active 测试订阅有效状态
+// TestSubscriptionStatus_Active test subscription active status
 func TestSubscriptionStatus_Active(t *testing.T) {
 	future := time.Now().Add(30 * 24 * time.Hour)
 	u := &User{
@@ -38,7 +38,7 @@ func TestSubscriptionStatus_Active(t *testing.T) {
 	}
 }
 
-// TestSubscriptionStatus_Expired 测试订阅过期状态
+// TestSubscriptionStatus_Expired Test subscription expiration status
 func TestSubscriptionStatus_Expired(t *testing.T) {
 	past := time.Now().Add(-1 * time.Hour)
 	u := &User{
@@ -57,9 +57,9 @@ func TestSubscriptionStatus_Expired(t *testing.T) {
 	}
 }
 
-// TestSubscriptionDaysLeft 测试剩余天数计算
+// TestSubscriptionDaysLeft test remaining days calculation
 func TestSubscriptionDaysLeft(t *testing.T) {
-	// 刚好 7 天后过期
+	// Expires in exactly 7 days
 	future := time.Now().Add(7 * 24 * time.Hour)
 	u := &User{SubscriptionExpireAt: &future}
 	days := u.SubscriptionDaysLeft()
@@ -67,7 +67,7 @@ func TestSubscriptionDaysLeft(t *testing.T) {
 		t.Fatalf("expected ~7 days, got %d", days)
 	}
 
-	// 刚好 1 天后过期
+	// Expires in exactly 1 day
 	future2 := time.Now().Add(24 * time.Hour)
 	u2 := &User{SubscriptionExpireAt: &future2}
 	days2 := u2.SubscriptionDaysLeft()
@@ -76,13 +76,13 @@ func TestSubscriptionDaysLeft(t *testing.T) {
 	}
 }
 
-// TestSubscriptionStatus_ExactlyNow 测试正好现在过期
+// TestSubscriptionStatus_ExactlyNow The test expires exactly now
 func TestSubscriptionStatus_ExactlyNow(t *testing.T) {
-	// 使用微秒级精度
+	// Use microsecond precision
 	justNow := time.Now()
 	u := &User{SubscriptionExpireAt: &justNow}
 
-	// 由于 Before 在 time.Now() 上是不确定的，我们只检查不会 panic
+	// Since Before is undefined on time.Now(), we just check and don't panic
 	_ = u.SubscriptionStatus()
 	_ = u.IsSubscriptionActive()
 	_ = u.SubscriptionDaysLeft()

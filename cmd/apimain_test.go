@@ -2,7 +2,7 @@ package main
 
 import "testing"
 
-// TestIsValidDatabaseName 覆盖库名格式校验的合法/非法样例。
+// TestIsValidDatabaseName covers valid and invalid database name validation examples.
 func TestIsValidDatabaseName(t *testing.T) {
 	valid := []string{
 		"rustdesk",
@@ -19,15 +19,15 @@ func TestIsValidDatabaseName(t *testing.T) {
 	}
 
 	invalid := []string{
-		"",            // 空
-		"1db",         // 数字开头
-		"db-name",     // 连字符
-		"db name",     // 空格
-		"db;DROP",     // 注入
-		"db`x",        // 反引号
-		"../../etc",   // 路径穿越字符
-		"db.name",     // 点
-		"-db",         // 下划线以外符号开头
+		"",          // empty
+		"1db",       // starts with a digit
+		"db-name",   // hyphen
+		"db name",   // space
+		"db;DROP",   // injection attempt
+		"db`x",      // backtick
+		"../../etc", // path traversal characters
+		"db.name",   // dot
+		"-db",       // starts with a symbol other than underscore
 	}
 	for _, name := range invalid {
 		if isValidDatabaseName(name) {
@@ -35,7 +35,7 @@ func TestIsValidDatabaseName(t *testing.T) {
 		}
 	}
 
-	// 长度超过 64 应判为非法
+	// Names longer than 64 bytes should be invalid.
 	tooLong := make([]byte, 65)
 	for i := range tooLong {
 		tooLong[i] = 'a'
@@ -44,7 +44,7 @@ func TestIsValidDatabaseName(t *testing.T) {
 		t.Errorf("expected 65-char name to be invalid (length limit 64)")
 	}
 
-	// 恰好 64 位应合法
+	// Exactly 64 bytes should be valid.
 	exact := make([]byte, 64)
 	for i := range exact {
 		exact[i] = 'a'

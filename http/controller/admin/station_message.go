@@ -80,11 +80,11 @@ func (m *StationMessage) MarkRead(ctx *gin.Context) {
 		All bool `json:"all"`
 	}{}
 	if err := ctx.ShouldBindJSON(form); err != nil {
-		response.Fail(ctx, 101, "参数错误")
+		response.Fail(ctx, 101, response.TranslateMsg(ctx, "ParamError"))
 		return
 	}
 	if form.All {
-		// 全部标记已读（需前端显式传入 all=true）
+		// All marks have been read (all=true needs to be explicitly passed in from the front end)
 		service.DB.Model(&model.StationMessage{}).
 			Where("(receiver_id = ? OR receiver_id = 0) AND is_read = 0", user.Id).
 			Update("is_read", 1)
@@ -105,19 +105,19 @@ func (m *StationMessage) Send(ctx *gin.Context) {
 		Content    string `json:"content"`
 	}{}
 	if err := ctx.ShouldBindJSON(form); err != nil {
-		response.Fail(ctx, 101, "参数错误")
+		response.Fail(ctx, 101, response.TranslateMsg(ctx, "ParamError"))
 		return
 	}
 	if form.ReceiverId == 0 {
-		response.Fail(ctx, 101, "请选择接收人")
+		response.Fail(ctx, 101, "Please select recipient")
 		return
 	}
 	if form.ReceiverId == sender.Id {
-		response.Fail(ctx, 101, "不能给自己发送消息")
+		response.Fail(ctx, 101, "Can't send messages to myself")
 		return
 	}
 	if form.Title == "" && form.Content == "" {
-		response.Fail(ctx, 101, "请输入消息内容")
+		response.Fail(ctx, 101, "Please enter message content")
 		return
 	}
 	if err := service.DB.Model(&model.StationMessage{}).Create(map[string]interface{}{
@@ -128,7 +128,7 @@ func (m *StationMessage) Send(ctx *gin.Context) {
 		"sender_name": sender.Username,
 		"receiver_id": form.ReceiverId,
 	}).Error; err != nil {
-		errMsg := "消息发送失败: " + err.Error()
+		errMsg := "Message sending failed:" + err.Error()
 		service.Logger.Warn("station_message send failed:", err)
 		response.Fail(ctx, 101, errMsg)
 		return
@@ -140,7 +140,7 @@ func (m *StationMessage) Send(ctx *gin.Context) {
 func (m *StationMessage) Broadcast(ctx *gin.Context) {
 	sender := ctx.MustGet("curUser").(*model.User)
 	if !service.AllService.UserService.IsAdmin(sender) {
-		response.Fail(ctx, 101, "无权限")
+		response.Fail(ctx, 101, "No permission")
 		return
 	}
 	form := &struct {
@@ -148,22 +148,22 @@ func (m *StationMessage) Broadcast(ctx *gin.Context) {
 		Content string `json:"content"`
 	}{}
 	if err := ctx.ShouldBindJSON(form); err != nil {
-		response.Fail(ctx, 101, "参数错误")
+		response.Fail(ctx, 101, response.TranslateMsg(ctx, "ParamError"))
 		return
 	}
 	if form.Title == "" && form.Content == "" {
-		response.Fail(ctx, 101, "请输入消息内容")
+		response.Fail(ctx, 101, "Please enter message content")
 		return
 	}
 	if err := service.DB.Model(&model.StationMessage{}).Create(map[string]interface{}{
 		"type":        "broadcast",
 		"title":       form.Title,
-		"content":     fmt.Sprintf("【全体推送】%s\n%s", form.Title, form.Content),
+		"content":     fmt.Sprintf("[Broadcast] %s\n%s", form.Title, form.Content),
 		"sender_id":   sender.Id,
-		"sender_name": sender.Username + "(管理员)",
+		"sender_name": sender.Username + "(administrator)",
 		"receiver_id": 0,
 	}).Error; err != nil {
-		errMsg := "广播发送失败: " + err.Error()
+		errMsg := "Broadcast sending failed:" + err.Error()
 		service.Logger.Warn("station_message broadcast failed:", err)
 		response.Fail(ctx, 101, errMsg)
 		return
@@ -175,20 +175,20 @@ func (m *StationMessage) Broadcast(ctx *gin.Context) {
 func (m *StationMessage) Cleanup(ctx *gin.Context) {
 	sender := ctx.MustGet("curUser").(*model.User)
 	if !service.AllService.UserService.IsAdmin(sender) {
-		response.Fail(ctx, 101, "无权限")
+		response.Fail(ctx, 101, "No permission")
 		return
 	}
 	form := &struct {
 		Years int `json:"years"`
 	}{}
 	if err := ctx.ShouldBindJSON(form); err != nil || (form.Years != 1 && form.Years != 3) {
-		response.Fail(ctx, 101, "参数错误，仅支持清理超过1年或3年的消息")
+		response.Fail(ctx, 101, response.TranslateMsg(ctx, "CleanupYearsInvalid"))
 		return
 	}
 	cutoff := time.Now().AddDate(-form.Years, 0, 0).Unix()
 	result := service.DB.Where("created_at < ? AND created_at > 0", cutoff).Delete(&model.StationMessage{})
 	if result.Error != nil {
-		response.Fail(ctx, 101, "清理失败")
+		response.Fail(ctx, 101, "Cleanup failed")
 		return
 	}
 	response.Success(ctx, gin.H{"deleted": result.RowsAffected})

@@ -1,11 +1,11 @@
-// Package payverify 码支付签名工具（易支付标准）
+// Package payverify code payment signature tool (Easy Pay Standard)
 //
-// 签名算法：
-//  1. 移除 sign 和 sign_type 字段，移除空值字段
-//  2. 按 key 字典序升序排列
-//  3. 拼接 k1=v1&k2=v2…（去掉末尾 &）
-//  4. 末尾追加 secret_key
-//  5. 取 MD5 小写 hex
+// Signature algorithm:
+//  1. Remove the sign and sign_type fields, and remove the null value fields
+//  2. Sort by key in ascending dictionary order
+//  3. Splice k1=v1&k2=v2…(remove the trailing &)
+//  4. Append secret_key at the end
+//  5. Get MD5 lowercase hex
 package payverify
 
 import (
@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-// Sign 生成签名
+// Sign generate signature
 func Sign(params map[string]string, secret string) string {
 	keys := make([]string, 0, len(params))
 	for k := range params {
@@ -47,7 +47,7 @@ func Sign(params map[string]string, secret string) string {
 	return hex.EncodeToString(h[:])
 }
 
-// Verify 校验签名
+// Verify Verify signature
 func Verify(params map[string]string, secret string) bool {
 	clientSign, ok := params["sign"]
 	if !ok || clientSign == "" {

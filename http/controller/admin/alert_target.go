@@ -23,7 +23,7 @@ func (c *AlertTargetCtl) checkAlertOwner(ctx *gin.Context, alertId uint) bool {
 	if !ok || u.Id == 0 {
 		return false
 	}
-	// Admin 可以查看所有告警规则（该路由组受 AdminPrivilege 中间件保护）
+	// Admin can view all alarm rules (the routing group is protected by AdminPrivilege middleware)
 	if u.IsAdmin != nil && *u.IsAdmin {
 		return true
 	}
@@ -64,11 +64,11 @@ func (c *AlertTargetCtl) Create(ctx *gin.Context) {
 		TargetName string `json:"target_name"`
 	}{}
 	if err := ctx.ShouldBindJSON(f); err != nil {
-		response.Fail(ctx, 101, "参数错误")
+		response.Fail(ctx, 101, response.TranslateMsg(ctx, "ParamError"))
 		return
 	}
 	if f.AlertId == 0 || f.TargetType == "" || f.TargetId == "" {
-		response.Fail(ctx, 101, "参数不完整")
+		response.Fail(ctx, 101, "Incomplete parameters")
 		return
 	}
 	if !c.checkAlertOwner(ctx, f.AlertId) {
@@ -86,16 +86,18 @@ func (c *AlertTargetCtl) Create(ctx *gin.Context) {
 }
 
 func (c *AlertTargetCtl) Delete(ctx *gin.Context) {
-	form := &struct{ Id uint `json:"id"` }{}
+	form := &struct {
+		Id uint `json:"id"`
+	}{}
 	if err := ctx.ShouldBindJSON(form); err != nil || form.Id == 0 {
-		response.Fail(ctx, 101, "ID不能为空")
+		response.Fail(ctx, 101, response.TranslateMsg(ctx, "IdRequired"))
 		return
 	}
 	// find the target first to check ownership
 	var target model.AlertTarget
 	service.DB.First(&target, form.Id)
 	if target.RowId == 0 {
-		response.Fail(ctx, 404, "目标不存在")
+		response.Fail(ctx, 404, "Target does not exist")
 		return
 	}
 	if !c.checkAlertOwner(ctx, target.AlertId) {
@@ -110,14 +112,14 @@ func (c *AlertTargetCtl) Delete(ctx *gin.Context) {
 func (c *AlertTargetCtl) AvailableCollections(ctx *gin.Context) {
 	user := ctx.MustGet("curUser").(*model.User)
 	if user == nil || user.Id == 0 {
-		response.Fail(ctx, 101, "未登录")
+		response.Fail(ctx, 101, "Not logged in")
 		return
 	}
 
 	type collectionInfo struct {
-		Id       uint   `json:"id"`
-		Name     string `json:"name"`
-		OwnerId  uint   `json:"owner_id"`
+		Id        uint   `json:"id"`
+		Name      string `json:"name"`
+		OwnerId   uint   `json:"owner_id"`
 		OwnerName string `json:"owner_name"`
 		PeerCount int64  `json:"peer_count"`
 	}
@@ -131,9 +133,9 @@ func (c *AlertTargetCtl) AvailableCollections(ctx *gin.Context) {
 		var cnt int64
 		service.DB.Model(&model.AddressBook{}).Where("collection_id = ?", c.Id).Count(&cnt)
 		result = append(result, collectionInfo{
-			Id:       c.Id,
-			Name:     c.Name + " (我的)",
-			OwnerId:  user.Id,
+			Id:        c.Id,
+			Name:      c.Name + "(mine)",
+			OwnerId:   user.Id,
 			OwnerName: user.Username,
 			PeerCount: cnt,
 		})
@@ -164,11 +166,11 @@ func (c *AlertTargetCtl) AvailableCollections(ctx *gin.Context) {
 		service.DB.First(owner, col.UserId)
 		ownerName := owner.Username
 		if ownerName == "" {
-			ownerName = "未知"
+			ownerName = "unknown"
 		}
 		result = append(result, collectionInfo{
 			Id:        col.Id,
-			Name:      col.Name + " (来自 " + ownerName + ")",
+			Name:      col.Name + "(from" + ownerName + ")",
 			OwnerId:   col.UserId,
 			OwnerName: ownerName,
 			PeerCount: cnt,

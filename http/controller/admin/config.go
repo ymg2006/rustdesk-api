@@ -15,10 +15,10 @@ import (
 type Config struct {
 }
 
-// ServerConfig RUSTDESK服务配置
+// ServerConfig RUSTDESK service configuration
 // @Tags ADMIN
-// @Summary RUSTDESK服务配置
-// @Description 服务配置,给webclient提供api-server
+// @Summary RUSTDESK service configuration
+// @Description service configuration, providing api-server to webclient
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} response.Response
@@ -35,10 +35,10 @@ func (co *Config) ServerConfig(c *gin.Context) {
 	response.Success(c, cf)
 }
 
-// AppConfig APP服务配置
+// AppConfig APP service configuration
 // @Tags ADMIN
-// @Summary APP服务配置
-// @Description APP服务配置
+// @Summary APP service configuration
+// @Description APP service configuration
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} response.Response
@@ -51,10 +51,10 @@ func (co *Config) AppConfig(c *gin.Context) {
 	})
 }
 
-// AdminConfig ADMIN服务配置
+// AdminConfig ADMIN service configuration
 // @Tags ADMIN
-// @Summary ADMIN服务配置
-// @Description ADMIN服务配置
+// @Summary ADMIN service configuration
+// @Description ADMIN service configuration
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} response.Response
@@ -98,10 +98,10 @@ func (co *Config) AdminConfig(c *gin.Context) {
 	})
 }
 
-// ConfigFileGet 读取后端配置文件（config.yaml）原始内容，仅管理员可用
+// ConfigFileGet reads the original content of the backend configuration file (config.yaml), only available to administrators
 // @Tags ADMIN
-// @Summary 读取后端配置文件
-// @Description 读取配置文件原始内容，供前端编辑
+// @Summary Read the backend configuration file
+// @Description reads the original content of the configuration file for front-end editing
 // @Produce json
 // @Success 200 {object} response.Response
 // @Failure 500 {object} response.Response
@@ -110,12 +110,12 @@ func (co *Config) AdminConfig(c *gin.Context) {
 func (co *Config) ConfigFileGet(c *gin.Context) {
 	path := global.ConfigPath
 	if path == "" {
-		response.Fail(c, 500, "配置文件路径未知")
+		response.Fail(c, 500, response.TranslateMsg(c, "ConfigPathUnknown"))
 		return
 	}
 	b, err := os.ReadFile(path)
 	if err != nil {
-		response.Fail(c, 500, "读取配置文件失败："+err.Error())
+		response.Fail(c, 500, response.TranslateMsg(c, "ReadConfigFailed")+err.Error())
 		return
 	}
 	response.Success(c, gin.H{
@@ -124,13 +124,13 @@ func (co *Config) ConfigFileGet(c *gin.Context) {
 	})
 }
 
-// ConfigFileUpdate 保存后端配置文件（config.yaml）原始内容，仅管理员可用
+// ConfigFileUpdate saves the original content of the backend configuration file (config.yaml) and is only available to administrators
 // @Tags ADMIN
-// @Summary 保存后端配置文件
-// @Description 校验 YAML 后写回配置文件，修改需重启服务生效
+// @Summary Save the backend configuration file
+// @Description Verifies YAML and writes back the configuration file. Modifications need to restart the service to take effect
 // @Accept json
 // @Produce json
-// @Param body body object{content=string} true "配置文件内容"
+// @Param body body object{content=string} true "Configuration file content"
 // @Success 200 {object} response.Response
 // @Failure 101 {object} response.Response
 // @Failure 500 {object} response.Response
@@ -143,24 +143,24 @@ func (co *Config) ConfigFileUpdate(c *gin.Context) {
 	var req Req
 	if err := c.ShouldBindJSON(&req); err != nil {
 		global.Logger.Error("config update bind/parse error: " + err.Error())
-		response.Fail(c, 101, response.TranslateMsg(c, "ParamsError")+" 配置格式有误，请检查输入")
+		response.Fail(c, 101, response.TranslateMsg(c, "ConfigFormatInvalid"))
 		return
 	}
 	path := global.ConfigPath
 	if path == "" {
-		response.Fail(c, 500, "配置文件路径未知")
+		response.Fail(c, 500, response.TranslateMsg(c, "ConfigPathUnknown"))
 		return
 	}
-	// 校验 YAML 合法性（不真正加载到运行配置，仅解析）
+	// Verify the validity of YAML (not actually loaded into the running configuration, only parsed)
 	v := viper.New()
 	v.SetConfigType("yaml")
 	if err := v.ReadConfig(strings.NewReader(req.Content)); err != nil {
 		global.Logger.Error("config file YAML parse error: " + err.Error())
-		response.Fail(c, 101, "配置格式错误(YAML 解析失败)，请检查 YAML 语法")
+		response.Fail(c, 101, response.TranslateMsg(c, "ConfigYamlInvalid"))
 		return
 	}
 	if err := os.WriteFile(path, []byte(req.Content), 0644); err != nil {
-		response.Fail(c, 500, "写入配置文件失败："+err.Error())
+		response.Fail(c, 500, response.TranslateMsg(c, "WriteConfigFailed")+err.Error())
 		return
 	}
 	response.Success(c, nil)

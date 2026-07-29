@@ -8,40 +8,42 @@ import (
 	"github.com/ymg2006/rustdesk-api/v2/global"
 )
 
-// Cors 跨域中间件。
+// Cors is the CORS middleware.
 //
-// SECURITY（修复前）：旧实现把请求头的 Origin 原样反射到 Access-Control-Allow-Origin，
-// 并始终携带 Access-Control-Allow-Credentials: true。这会让任意第三方站点在用户浏览器中
-// 发起带凭证（api-token / Cookie）的跨域请求并读取响应，造成 CSRF / 敏感数据泄露。
+// SECURITY before the fix: the old implementation reflected the request Origin directly into
+// Access-Control-Allow-Origin and always sent Access-Control-Allow-Credentials: true. That allowed
+// arbitrary third-party sites to issue credentialed cross-origin requests (api-token / Cookie) in
+// the user's browser and read responses, causing CSRF and sensitive-data exposure risks.
 //
-// SECURITY（修复后）：仅当请求的 Origin 命中配置的允许源白名单（cors.allow-origins）时才反射，
-// 且仅在命中时才允许携带凭证。白名单为空时完全不开启跨域（不设置 ACAO，浏览器会拦截跨域响应）。
+// SECURITY after the fix: reflect the Origin only when it matches the configured allowlist
+// (cors.allow-origins), and allow credentials only on matches. An empty allowlist disables CORS
+// completely by omitting ACAO, so browsers block cross-origin responses.
 func Cors() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.GetHeader("Origin")
 
-		// 同源请求或非浏览器请求（无 Origin）无需跨域处理，直接放行。
+		// Same-origin requests or non-browser requests without Origin do not need CORS handling.
 		if origin == "" {
 			c.Next()
 			return
 		}
 
-		// 未命中白名单：不设置任何 CORS 响应头。
-		// 浏览器因缺少 Access-Control-Allow-Origin 会拦截实际响应；
-		// 预检 OPTIONS 也因无 ACAO 而被拒绝，从根源上关闭跨域。
+		// Origin not in the allowlist: do not set any CORS response headers.
+		// Browsers block the actual response when Access-Control-Allow-Origin is missing.
+		// Preflight OPTIONS requests are also rejected without ACAO, disabling CORS at the source.
 		if !isOriginAllowed(origin) {
 			c.Next()
 			return
 		}
 
-		// 仅命中白名单时才反射具体源并允许凭证，避免任意站点读取带凭证的响应。
+		// Reflect the concrete origin and allow credentials only for allowlisted origins.
 		c.Header("Access-Control-Allow-Origin", origin)
 		c.Header("Access-Control-Allow-Credentials", "true")
 		c.Header("Access-Control-Allow-Headers", "api-token,content-type,authorization")
 		c.Header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
 
 		if c.Request.Method == http.MethodOptions {
-			// 预检请求：命中白名单时直接返回 204，不进入后续路由。
+			// Preflight request: return 204 directly for allowlisted origins without entering later routes.
 			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}
@@ -49,7 +51,7 @@ func Cors() gin.HandlerFunc {
 	}
 }
 
-// isOriginAllowed 判断 origin 是否命中白名单（精确匹配，大小写不敏感以杜绝大小写绕过）。
+// isOriginAllowed checks whether origin is in the allowlist using exact, case-insensitive matching.
 func isOriginAllowed(origin string) bool {
 	for _, allowed := range global.Config.Cors.AllowOrigins {
 		if allowed == "" {

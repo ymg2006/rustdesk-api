@@ -2,7 +2,7 @@ package api
 
 import "time"
 
-// OrderResp 创建/查询订单响应
+// OrderResp is the create/query order response.
 type OrderResp struct {
 	OutTradeNo    string     `json:"out_trade_no"`
 	CashierURL    string     `json:"cashier_url"`
@@ -19,38 +19,38 @@ type OrderResp struct {
 	ExpireAt      *time.Time `json:"expire_at,omitempty"`
 }
 
-// ClaimResp 认领响应
+// ClaimResp is the claim response.
 type ClaimResp struct {
-	Code     string     `json:"code"`
-	ExpireAt time.Time  `json:"expire_at"`
-	Plan     string     `json:"plan"`
+	Code     string    `json:"code"`
+	ExpireAt time.Time `json:"expire_at"`
+	Plan     string    `json:"plan"`
 }
 
-// MineResp 我的订阅响应
+// MineResp is the current user's subscription response.
 type MineResp struct {
-	Plan                string     `json:"plan"`
+	Plan                 string     `json:"plan"`
 	SubscriptionExpireAt *time.Time `json:"subscription_expire_at"`
-	Status              string     `json:"status"`
-	DaysLeft            int        `json:"days_left"`
-	IsExpiringSoon      bool       `json:"is_expiring_soon"`
+	Status               string     `json:"status"`
+	DaysLeft             int        `json:"days_left"`
+	IsExpiringSoon       bool       `json:"is_expiring_soon"`
 }
 
-// RedeemResp 兑换响应
+// RedeemResp is the redemption response.
 type RedeemResp struct {
-	Plan                  string     `json:"plan"`
-	ExpireAt              time.Time  `json:"expire_at"`
-	SubscriptionExpireAt  *time.Time `json:"subscription_expire_at"`
+	Plan                 string     `json:"plan"`
+	ExpireAt             time.Time  `json:"expire_at"`
+	SubscriptionExpireAt *time.Time `json:"subscription_expire_at"`
 }
 
-// CodeListItem 邀请码列表项（后台管理用）
+// CodeListItem is an invite-code list item for admin management.
 type CodeListItem struct {
-	ID           uint       `json:"id"`
-	Code         string     `json:"code"`
-	Plan         string     `json:"plan"`
-	Status       string     `json:"status"`
-	UsedBy       uint       `json:"used_by"`
-	UsedByName   string     `json:"used_by_name"`
-	ExpireAt     time.Time  `json:"expire_at"`
-	BoundOrderID string     `json:"bound_order_id"`
-	CreatedAt    time.Time  `json:"created_at"`
+	ID           uint      `json:"id"`
+	Code         string    `json:"code"`
+	Plan         string    `json:"plan"`
+	Status       string    `json:"status"`
+	UsedBy       uint      `json:"used_by"`
+	UsedByName   string    `json:"used_by_name"`
+	ExpireAt     time.Time `json:"expire_at"`
+	BoundOrderID string    `json:"bound_order_id"`
+	CreatedAt    time.Time `json:"created_at"`
 }

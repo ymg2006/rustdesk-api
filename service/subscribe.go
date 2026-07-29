@@ -14,21 +14,21 @@ import (
 	"gorm.io/gorm"
 )
 
-// SubscribeService 订阅付费服务
+// SubscribeService Subscription paid service
 type SubscribeService struct{}
 
-// NewSubscribeService 创建 SubscribeService
+// NewSubscribeService creates SubscribeService
 func NewSubscribeService() *SubscribeService {
 	return &SubscribeService{}
 }
 
-// Db 返回 DB 实例
+// Db returns the DB instance
 func (s *SubscribeService) Db() *gorm.DB {
 	return DB
 }
 
-// generateOutTradeNo 生成商户订单号
-// 格式：SUB + YYYYMMDD + 12hex = 约 24 字符
+// generateOutTradeNo generates merchant order number
+// Format: SUB + YYYYMMDD + 12hex = about 24 characters
 func (s *SubscribeService) generateOutTradeNo() string {
 	datePart := time.Now().Format("20060102")
 	b := make([]byte, 6)
@@ -36,34 +36,34 @@ func (s *SubscribeService) generateOutTradeNo() string {
 	return "SUB" + datePart + hex.EncodeToString(b)
 }
 
-// PayConfig 返回支付配置的快捷引用
+// PayConfig returns a shortcut reference to the payment configuration
 func (s *SubscribeService) PayConfig() (secretKey string, expireSec int) {
 	pc := Config.Payment
 	return pc.SecretKey, pc.OrderExpireSec
 }
 
-// ExtractAmountFromSMS 从短信内容中提取支付金额（元）
-// 支持格式: "到账10.00元"、"收款10元"、"到账10.5元"等
+// ExtractAmountFromSMS Extracts the payment amount (yuan) from the text message content
+// Supported formats: "10.00 yuan received", "Receive 10 yuan", "10.5 yuan received", etc.
 func (s *SubscribeService) ExtractAmountFromSMS(msg string) (string, error) {
-	// 匹配 "到账/收款 + 数字.数字 + 元" 模式
-	re := regexp.MustCompile(`(?:到账|收款|入账|收到)[：:\s]*(\d+\.?\d*)\s*元`)
+	// Matches the pattern "Arrival/receipt+ number. number + yuan"
+	re := regexp.MustCompile(`(?:credited|payment received|deposited|received)[:\s]*(\d+\.?\d*)\s*(?:yuan|CNY)`)
 	matches := re.FindStringSubmatch(msg)
 	if len(matches) < 2 {
 		return "", fmt.Errorf("cannot extract amount from SMS: %s", msg)
 	}
 	amount := matches[1]
-	// 补全小数位
+	// Complete decimal places
 	if !strings.Contains(amount, ".") {
 		amount += ".00"
 	}
 	return amount, nil
 }
 
-// MatchOrderByAmount 按金额匹配最近未支付的订单（SmsForwarder 按金额回调用）
-// amount: 字符串金额，支持 "10.00" 或 "10" 格式
-// 返回匹配到的 out_trade_no
+// MatchOrderByAmount matches the latest unpaid orders by amount (SmsForwarder callback by amount)
+// amount: string amount, supports "10.00" or "10" format
+// Returns the matched out_trade_no
 func (s *SubscribeService) MatchOrderByAmount(amount string) (string, error) {
-	// 解析金额到分
+	// Analyze amount to cents
 	amount = strings.TrimSpace(amount)
 	var amountCents int64
 	if idx := strings.Index(amount, "."); idx >= 0 {
@@ -86,7 +86,7 @@ func (s *SubscribeService) MatchOrderByAmount(amount string) (string, error) {
 		return "", fmt.Errorf("invalid amount: %s", amount)
 	}
 
-	// 金额匹配窗口：仅匹配 5 分钟内创建的未支付订单
+	// Amount matching window: only match unpaid orders created within 5 minutes
 	since := time.Now().Add(-5 * time.Minute)
 
 	order := &model.PayOrder{}
@@ -100,14 +100,14 @@ func (s *SubscribeService) MatchOrderByAmount(amount string) (string, error) {
 	return order.OutTradeNo, nil
 }
 
-// CreateOrder 创建订阅订单
+// CreateOrder creates a subscription order
 // channel: alipay / wechat, planKey: 1m / 3m / 6m / 12m
 func (s *SubscribeService) CreateOrder(userID uint, channel, planKey string) (*model.PayOrder, error) {
 	if channel != "wechat" && channel != "alipay" {
 		return nil, fmt.Errorf("unsupported channel: %s", channel)
 	}
 
-	// 查时长选项
+	// Check duration options
 	opt := Config.Subscription.LookupPlan(planKey)
 	if opt == nil {
 		return nil, fmt.Errorf("invalid plan_key: %s", planKey)
@@ -140,25 +140,25 @@ func (s *SubscribeService) CreateOrder(userID uint, channel, planKey string) (*m
 	return order, nil
 }
 
-// NotifyConfig 通知签名参数
+// NotifyConfig notification signature parameters
 type NotifyConfig struct {
 	SecretKey string
-	PID       string // 商户 ID，自我实现时固定
+	PID       string // Merchant ID, fixed when self-fulfilling
 }
 
-// BuildNotifyParams 构建回调通知参数字符串（含 sign）
-// 码支付标准格式：pid, trade_no, out_trade_no, type, name, money, trade_status, sign
+// BuildNotifyParams build callback notification parameter string (including sign)
+// Standard format for code payment: pid, trade_no, out_trade_no, type, name, money, trade_status, sign
 func (s *SubscribeService) BuildNotifyParams(order *model.PayOrder) map[string]string {
 	params := map[string]string{
 		"pid":          "1000",
 		"trade_no":     order.OutTradeNo,
 		"out_trade_no": order.OutTradeNo,
 		"type":         order.Channel,
-		"name":         order.Plan + "订阅",
+		"name":         order.Plan + "subscription",
 		"money":        fmt.Sprintf("%.2f", float64(order.AmountCents)/100),
 		"trade_status": "TRADE_SUCCESS",
 	}
-	// 有 secret_key 才加签名
+	// Sign only if secret_key is available
 	sk, _ := s.PayConfig()
 	if sk != "" {
 		params["sign"] = payverify.Sign(params, sk)
@@ -166,9 +166,9 @@ func (s *SubscribeService) BuildNotifyParams(order *model.PayOrder) map[string]s
 	return params
 }
 
-// HandleNotify 处理支付回调通知
-// params: 回调参数（含 sign）
-// 返回 true 表示处理成功，false 表示验签失败需忽略
+// HandleNotify handles payment callback notifications
+// params: callback parameters (including sign)
+// Returning true indicates that the processing is successful, false indicates that the signature verification fails and needs to be ignored.
 func (s *SubscribeService) HandleNotify(params map[string]string) (bool, error) {
 	secretKey, _ := s.PayConfig()
 	if secretKey != "" {
@@ -180,19 +180,19 @@ func (s *SubscribeService) HandleNotify(params map[string]string) (bool, error) 
 		Logger.Warn("codepay secret_key not configured, skip sign verification")
 	}
 
-	// 取 out_trade_no
+	// Take out_trade_no
 	outTradeNo := params["out_trade_no"]
 	if outTradeNo == "" {
 		return false, fmt.Errorf("out_trade_no empty")
 	}
 
-	// 只处理 TRADE_SUCCESS
+	// Only handle TRADE_SUCCESS
 	if params["trade_status"] != "TRADE_SUCCESS" {
 		Logger.Infof("notify ignored: status=%s, out_trade_no=%s", params["trade_status"], outTradeNo)
 		return true, nil
 	}
 
-	// 事务：幂等改单 → 生成邀请码 → 激活订阅
+	// Transaction: Idempotent order modification → Generate invitation code → Activate subscription
 	now := time.Now()
 	err := s.Db().Transaction(func(tx *gorm.DB) error {
 		order := &model.PayOrder{}
@@ -200,7 +200,7 @@ func (s *SubscribeService) HandleNotify(params map[string]string) (bool, error) 
 			return fmt.Errorf("order not found: %s", outTradeNo)
 		}
 
-		// 幂等
+		// Idempotent
 		if order.Status == "paid" {
 			Logger.Infof("notify idempotent: order %s already paid, skip", outTradeNo)
 			return nil
@@ -209,7 +209,7 @@ func (s *SubscribeService) HandleNotify(params map[string]string) (bool, error) 
 			return fmt.Errorf("order %s status is %s, cannot paid", outTradeNo, order.Status)
 		}
 
-		// 改单
+		// Change order
 		if err := tx.Model(order).Updates(map[string]interface{}{
 			"status":       "paid",
 			"paid_at":      &now,
@@ -220,7 +220,7 @@ func (s *SubscribeService) HandleNotify(params map[string]string) (bool, error) 
 		order.Status = "paid"
 		order.PaidAt = &now
 
-		// 生成邀请码并激活
+		// Generate invitation code and activate
 		periodDays := order.PeriodDays
 		if periodDays <= 0 {
 			periodDays = 30
@@ -236,7 +236,7 @@ func (s *SubscribeService) HandleNotify(params map[string]string) (bool, error) 
 			return fmt.Errorf("generate code: %w", err)
 		}
 
-		// 激活订阅（顺延）
+		// Activate subscription (postponed)
 		user := &model.User{}
 		if err := tx.Where("id = ?", order.UserID).First(user).Error; err != nil {
 			return err
@@ -248,7 +248,7 @@ func (s *SubscribeService) HandleNotify(params map[string]string) (bool, error) 
 		} else {
 			newExpire = user.SubscriptionExpireAt.Add(periodDuration)
 		}
-		// 同步更新 expired_at，使会员过期时客户端也无法登录
+		// Synchronously update expired_at so that the client cannot log in when the membership expires.
 		expiredAt := newExpire.Unix()
 		if err := tx.Model(&model.User{}).Where("id = ?", order.UserID).
 			Updates(map[string]interface{}{
@@ -259,7 +259,7 @@ func (s *SubscribeService) HandleNotify(params map[string]string) (bool, error) 
 			return err
 		}
 
-		// 更新邀请码状态
+		// Update invitation code status
 		icTime := now
 		if err := tx.Model(&model.InviteCode{}).Where("id = ?", ic.Id).
 			Updates(map[string]interface{}{
@@ -281,7 +281,7 @@ func (s *SubscribeService) HandleNotify(params map[string]string) (bool, error) 
 	return true, nil
 }
 
-// QueryOrder 查询订单（仅订单所属用户可见）
+// QueryOrder Query order (visible only to the user who owns the order)
 func (s *SubscribeService) QueryOrder(outTradeNo string, userID uint) (*model.PayOrder, error) {
 	order := &model.PayOrder{}
 	if err := s.Db().Where("out_trade_no = ?", outTradeNo).First(order).Error; err != nil {
@@ -293,7 +293,7 @@ func (s *SubscribeService) QueryOrder(outTradeNo string, userID uint) (*model.Pa
 	return order, nil
 }
 
-// ClaimCode 订单号认领邀请码（已支付但未收到码的兜底）
+// ClaimCode order number to claim the invitation code (the code has been paid but not received)
 func (s *SubscribeService) ClaimCode(userID uint, outTradeNo string) (*model.InviteCode, error) {
 	order := &model.PayOrder{}
 	if err := s.Db().Where("out_trade_no = ? AND user_id = ?", outTradeNo, userID).First(order).Error; err != nil {
@@ -329,7 +329,7 @@ func (s *SubscribeService) ClaimCode(userID uint, outTradeNo string) (*model.Inv
 	return ic, nil
 }
 
-// RedeemCode 用户兑换邀请码
+// RedeemCode users redeem invitation codes
 func (s *SubscribeService) RedeemCode(userID uint, codeStr string) (*model.InviteCode, error) {
 	ics := &InviteCodeService{}
 	ic, err := ics.Activate(codeStr, userID)
@@ -339,7 +339,7 @@ func (s *SubscribeService) RedeemCode(userID uint, codeStr string) (*model.Invit
 	return ic, nil
 }
 
-// GetMine 获取当前用户订阅信息
+// GetMine gets current user subscription information
 func (s *SubscribeService) GetMine(userID uint) (*model.User, error) {
 	user := &model.User{}
 	if err := s.Db().Where("id = ?", userID).First(user).Error; err != nil {

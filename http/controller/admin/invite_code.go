@@ -13,16 +13,16 @@ import (
 	"github.com/ymg2006/rustdesk-api/v2/service"
 )
 
-// AdminInviteCodeController 后台邀请码管理
+// AdminInviteCodeController background invitation code management
 type AdminInviteCodeController struct {
 }
 
-// NewAdminInviteCodeController 创建控制器
+// NewAdminInviteCodeController creates a controller
 func NewAdminInviteCodeController() *AdminInviteCodeController {
 	return &AdminInviteCodeController{}
 }
 
-// List 分页查询邀请码列表
+// List Query invitation code list by page
 func (ac *AdminInviteCodeController) List(c *gin.Context) {
 	status := c.Query("status")
 	plan := c.Query("plan")
@@ -61,7 +61,7 @@ func (ac *AdminInviteCodeController) List(c *gin.Context) {
 		return
 	}
 
-	// 收集所有使用过授权码的用户ID，批量查用户名
+	// Collect all user IDs that have used authorization codes and check user names in batches
 	userIdSet := make(map[uint]bool)
 	for _, ic := range list {
 		if ic.UsedBy > 0 {
@@ -105,7 +105,7 @@ func (ac *AdminInviteCodeController) List(c *gin.Context) {
 	})
 }
 
-// Create 手动生成邀请码
+// Create manually generate invitation code
 func (ac *AdminInviteCodeController) Create(c *gin.Context) {
 	req := &api.AdminCreateCodeReq{}
 	if err := c.ShouldBindJSON(req); err != nil {
@@ -134,12 +134,12 @@ func (ac *AdminInviteCodeController) Create(c *gin.Context) {
 	})
 }
 
-// Revoke 失效邀请码
+// Revoke invalid invitation code
 func (ac *AdminInviteCodeController) Revoke(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
-		response.Fail(c, 400, "invalid id")
+		response.Fail(c, 400, response.TranslateMsg(c, "InvalidId"))
 		return
 	}
 
@@ -151,7 +151,7 @@ func (ac *AdminInviteCodeController) Revoke(c *gin.Context) {
 	response.Success(c, nil)
 }
 
-// Export 导出邀请码 CSV（对账用）
+// Export export invitation code CSV (for reconciliation)
 func (ac *AdminInviteCodeController) Export(c *gin.Context) {
 	status := c.Query("status")
 	plan := c.Query("plan")
@@ -160,7 +160,7 @@ func (ac *AdminInviteCodeController) Export(c *gin.Context) {
 		Status:   status,
 		Plan:     plan,
 		Page:     1,
-		PageSize: 100000, // 一次性导出
+		PageSize: 100000, // One-time export
 	}
 
 	ics := &service.InviteCodeService{}
@@ -173,10 +173,10 @@ func (ac *AdminInviteCodeController) Export(c *gin.Context) {
 	c.Header("Content-Type", "text/csv; charset=utf-8")
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=invite_codes_%s.csv", time.Now().Format("20060102150405")))
 
-	// 写入 BOM 使 Excel 正确识别 UTF-8
+	// Write BOM to make Excel correctly recognize UTF-8
 	c.Writer.Write([]byte{0xEF, 0xBB, 0xBF})
 
-	// 批量查用户名
+	// Check usernames in batches
 	userIdSet := make(map[uint]bool)
 	for _, ic := range list {
 		if ic.UsedBy > 0 {

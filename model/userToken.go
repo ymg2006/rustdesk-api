@@ -7,8 +7,8 @@ type UserToken struct {
 	DeviceId   string `json:"device_id" gorm:"default:'';omitempty;"`
 	Token      string `json:"token" gorm:"default:'';not null;index"`
 	ExpiredAt  int64  `json:"expired_at" gorm:"default:0;not null;"`
-	// Fingerprint 绑定 token 签发时的客户端特征（IP+User-Agent 的哈希），
-	// 用于后端校验请求来源，防止 token 被盗用后从其他环境冒用。
+	// Fingerprint binds the client characteristics when the token is issued (IP+User-Agent hash),
+	// Used by the backend to verify the source of the request to prevent the token from being used from other environments after being stolen.
 	Fingerprint string `json:"fingerprint" gorm:"default:'';not null;"`
 	TimeModel
 }

@@ -15,15 +15,15 @@ import (
 	"github.com/ymg2006/rustdesk-api/v2/service"
 )
 
-// SubscribeController 订阅控制器
+// SubscribeController subscription controller
 type SubscribeController struct{}
 
-// NewSubscribeController 创建控制器
+// NewSubscribeController creates a controller
 func NewSubscribeController() *SubscribeController {
 	return &SubscribeController{}
 }
 
-// getQRURL 根据渠道从配置读取文件名并返回完整 URL
+// getQRURL reads the filename from the configuration based on the channel and returns the full URL
 func (sc *SubscribeController) getQRURL(c *gin.Context, channel string) string {
 	cc := global.Config.Payment.Cashier
 	qrPath := cc.AlipayQR
@@ -34,19 +34,19 @@ func (sc *SubscribeController) getQRURL(c *gin.Context, channel string) string {
 		return ""
 	}
 
-	// 已经是完整 URL，直接返回
+	// Already a complete URL, return directly
 	if len(qrPath) > 4 && qrPath[:4] == "http" {
 		return qrPath
 	}
 
-	// 相对路径：按配置原样构造 URL（文件名和扩展名完全由配置决定）
-	// 优先使用 rustdesk.api-server 配置作为 base URL（兼容反向代理场景）
+	// Relative paths: Construct the URL as configured (the filename and extension are entirely determined by the configuration)
+	// It is preferred to use the rustdesk.api-server configuration as the base URL (compatible with reverse proxy scenarios)
 	base := filepath.Base(qrPath)
 	apiServer := strings.TrimRight(global.Config.Rustdesk.ApiServer, "/")
 	if apiServer != "" {
 		return fmt.Sprintf("%s/static/qr/%s", apiServer, base)
 	}
-	// 回退：从请求头构造（TLS 终止代理场景 check X-Forwarded-Proto）
+	// Fallback: constructed from request headers (TLS termination proxy scenario check X-Forwarded-Proto)
 	scheme := "http"
 	if c.Request.TLS != nil {
 		scheme = "https"
@@ -57,14 +57,14 @@ func (sc *SubscribeController) getQRURL(c *gin.Context, channel string) string {
 	return fmt.Sprintf("%s://%s/static/qr/%s", scheme, c.Request.Host, base)
 }
 
-// Plans 返回可选时长列表
+// Plans returns a list of optional durations
 func (sc *SubscribeController) Plans(c *gin.Context) {
 	sc.SubscriptionPlans(c)
 }
 
-// SubscriptionPlans 返回可选时长列表
+// SubscriptionPlans returns a list of optional durations
 func (sc *SubscribeController) SubscriptionPlans(c *gin.Context) {
-	// 不需要注入到 global.Config，直接从 service 读取
+	// No need to inject into global.Config, read directly from service
 	subCfg := global.Config.Subscription
 	type planItem struct {
 		Key        string `json:"key"`
@@ -84,7 +84,7 @@ func (sc *SubscribeController) SubscriptionPlans(c *gin.Context) {
 	response.Success(c, items)
 }
 
-// CreateOrder 创建订单
+// CreateOrder creates an order
 func (sc *SubscribeController) CreateOrder(c *gin.Context) {
 	req := &api.CreateOrderReq{}
 	if err := c.ShouldBindJSON(req); err != nil {
@@ -123,20 +123,20 @@ func (sc *SubscribeController) CreateOrder(c *gin.Context) {
 	response.Success(c, resp)
 }
 
-// WebhookReq 简单确认 webhook 请求
+// WebhookReq simply confirms the webhook request
 type WebhookReq struct {
-	// Secret 预共享密钥（必须等于 config payment.secret_key）
+	// Secret pre-shared key (must equal config payment.secret_key)
 	Secret string `json:"secret" binding:"required"`
-	// OutTradeNo 可选：直接指定订单号
+	// OutTradeNo Optional: directly specify the order number
 	OutTradeNo string `json:"out_trade_no"`
-	// Amount 可选：不传 order_no 时传金额，系统自动匹配最近未支付的订单（元，如 "10.00"）
+	// Amount Optional: If order_no is not passed, the amount is passed, and the system will automatically match the latest unpaid order (yuan, such as "10.00")
 	Amount string `json:"amount"`
 }
 
-// Webhook SmsForwarder 等监控工具直接回调接口
-// 两种调用方式：
-//   1. 传 order_no → 直接确认该订单
-//   2. 只传 amount → 按金额匹配最近 pending 订单
+// Webhook SmsForwarder and other monitoring tools direct callback interface
+// Two calling methods:
+//  1. Pass order_no → directly confirm the order
+//  2. Only pass amount → match the latest pending orders by amount
 func (sc *SubscribeController) Webhook(c *gin.Context) {
 	req := &WebhookReq{}
 	if err := c.ShouldBindJSON(req); err != nil {
@@ -154,10 +154,10 @@ func (sc *SubscribeController) Webhook(c *gin.Context) {
 	var outTradeNo string
 
 	if req.OutTradeNo != "" {
-		// 方式1: 直接按订单号确认
+		// Method 1: Confirm directly by order number
 		outTradeNo = req.OutTradeNo
 	} else if req.Amount != "" {
-		// 方式2: 按金额匹配
+		// Method 2: Match by amount
 		no, err := service.AllService.SubscribeService.MatchOrderByAmount(req.Amount)
 		if err != nil {
 			global.Logger.Warnf("webhook match amount %s failed: %v", req.Amount, err)
@@ -170,7 +170,7 @@ func (sc *SubscribeController) Webhook(c *gin.Context) {
 		return
 	}
 
-	// 构造带签名的参数传给 HandleNotify
+	// Construct signed parameters and pass them to HandleNotify
 	params := map[string]string{
 		"out_trade_no": outTradeNo,
 		"trade_status": "TRADE_SUCCESS",
@@ -191,20 +191,20 @@ func (sc *SubscribeController) Webhook(c *gin.Context) {
 	}
 }
 
-// SmsForwarderReq SmsForwarder 原生 webhook 回调格式
-// 模板: {"pid":"1001","aid":"46","uid":"{{UID}}","title":"{{TITLE}}","msg":"{{MSG}}","time":"{{RECEIVE_TIME}}","divice":"{{DEVICE_NAME}}"}
+// SmsForwarderReq SmsForwarder native webhook callback format
+// Template: {"pid":"1001","aid":"46","uid":"{{UID}}","title":"{{TITLE}}","msg":"{{MSG}}","time":"
 type SmsForwarderReq struct {
 	PID    string `json:"pid"`
 	AID    string `json:"aid"`
 	UID    string `json:"uid"`
-	Title  string `json:"title"`  // 发送者，如"支付宝"
-	Msg    string `json:"msg"`    // 内容，如"支付宝到账10.00元"
+	Title  string `json:"title"` // Sender, such as "Alipay"
+	Msg    string `json:"msg"`   // Content, such as "Alipay received 10.00 yuan"
 	Time   string `json:"time"`
 	Device string `json:"divice"`
 }
 
-// SmsWebhook 接收 SmsForwarder 原生格式回调，自动提取金额匹配订单
-// 配置: URL = http://host/api/subscribe/sms-webhook?secret=你的key
+// SmsWebhook receives the SmsForwarder native format callback and automatically extracts the amount to match the order.
+// Configuration: URL=http://host/api/subscribe/sms-webhook?secret=your-key
 func (sc *SubscribeController) SmsWebhook(c *gin.Context) {
 	secret := c.Query("secret")
 	sk := global.Config.Payment.SecretKey
@@ -255,7 +255,7 @@ func (sc *SubscribeController) SmsWebhook(c *gin.Context) {
 	}
 }
 
-// Notify 支付回调通知（公开接口，不鉴权）
+// Notify payment callback notification (public interface, no authentication)
 func (sc *SubscribeController) Notify(c *gin.Context) {
 	params := make(map[string]string)
 	c.Request.ParseForm()
@@ -286,11 +286,11 @@ func (sc *SubscribeController) Notify(c *gin.Context) {
 	}
 }
 
-// QueryOrder 查询订单状态
+// QueryOrder Query order status
 func (sc *SubscribeController) QueryOrder(c *gin.Context) {
 	outTradeNo := c.Param("out_trade_no")
 	if outTradeNo == "" {
-		response.Fail(c, 400, "missing out_trade_no")
+		response.Fail(c, 400, response.TranslateMsg(c, "MissingOutTradeNo"))
 		return
 	}
 	user := service.AllService.UserService.CurUser(c)
@@ -326,7 +326,7 @@ func (sc *SubscribeController) QueryOrder(c *gin.Context) {
 	response.Success(c, resp)
 }
 
-// Claim 订单号认领邀请码（兜底）
+// Claim order number to claim invitation code (cover the bottom line)
 func (sc *SubscribeController) Claim(c *gin.Context) {
 	req := &api.ClaimReq{}
 	if err := c.ShouldBindJSON(req); err != nil {
@@ -361,7 +361,7 @@ func (sc *SubscribeController) Claim(c *gin.Context) {
 	response.Success(c, resp)
 }
 
-// Redeem 兑换邀请码
+// Redeem redeem invitation code
 func (sc *SubscribeController) Redeem(c *gin.Context) {
 	req := &api.RedeemReq{}
 	if err := c.ShouldBindJSON(req); err != nil {
@@ -401,7 +401,7 @@ func (sc *SubscribeController) Redeem(c *gin.Context) {
 	response.Success(c, resp)
 }
 
-// Mine 获取当前用户的订阅信息
+// Mine gets the current user’s subscription information
 func (sc *SubscribeController) Mine(c *gin.Context) {
 	user := service.AllService.UserService.CurUser(c)
 	if user.Id == 0 {

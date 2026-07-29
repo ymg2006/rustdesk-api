@@ -31,7 +31,7 @@ func (s *DashboardService) Stats() *DashboardStats {
 	return stats
 }
 
-// UserStats 返回指定用户的设备统计数据
+// UserStats returns device statistics for the specified user
 func (s *DashboardService) UserStats(userId uint) *DashboardStats {
 	stats := &DashboardStats{}
 	now := time.Now().Unix()
@@ -39,7 +39,7 @@ func (s *DashboardService) UserStats(userId uint) *DashboardStats {
 	DB.Model(&model.Peer{}).Where("user_id = ?", userId).Count(&stats.TotalPeers)
 	DB.Model(&model.Peer{}).Where("user_id = ? and last_online_time > ?", userId, now-300).Count(&stats.OnlinePeers)
 	DB.Model(&model.Peer{}).Where("user_id = ? and (last_online_time <= ? OR last_online_time = 0)", userId, now-300).Count(&stats.OfflinePeers)
-	// 普通用户不显示总用户数
+	// Ordinary users do not display the total number of users
 	stats.TotalUsers = 0
 	nowTime := time.Now()
 	todayStart := time.Date(nowTime.Year(), nowTime.Month(), nowTime.Day(), 0, 0, 0, 0, nowTime.Location())

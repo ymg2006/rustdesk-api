@@ -1,5 +1,5 @@
 .idea
-# AI 工作记录 - 不推送至远程
+# AI work records - do not push to the remote repository.
 .codebuddy/
 runtime/*
 !runtime
@@ -7,7 +7,7 @@ runtime/*
 go.sum
 release
 data/rustdeskapi.db*.exe
-# 防止 go build 产物被提交
+# Prevent Go build artifacts from being committed.
 cmd.exe
 *.exe
 api-server.exe
@@ -15,3 +15,6 @@ api-server
 main.exe
 main
 
+/data
+*.exe*
+/.extra

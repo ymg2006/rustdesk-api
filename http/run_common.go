@@ -6,7 +6,7 @@ import (
 	"github.com/ymg2006/rustdesk-api/v2/global"
 )
 
-// orDefault 当 v<=0 时返回安全默认值 def，否则返回 v。
+// orDefault returns the safe default def when v <= 0; otherwise it returns v.
 func orDefault(v, def int) int {
 	if v <= 0 {
 		return def
@@ -14,8 +14,9 @@ func orDefault(v, def int) int {
 	return v
 }
 
-// serverTimeouts 根据配置构造读/写/空闲超时，缺失或非法(<=0)时回退到安全默认值
-//（15/30/120 秒），以缓解慢速攻击与连接耗尽。
+// serverTimeouts builds read/write/idle timeouts from configuration.
+// Missing or invalid values (<=0) fall back to safe defaults (15/30/120 seconds)
+// to mitigate slow attacks and connection exhaustion.
 func serverTimeouts() (read, write, idle time.Duration) {
 	read = time.Duration(orDefault(global.Config.Server.ReadTimeout, 15)) * time.Second
 	write = time.Duration(orDefault(global.Config.Server.WriteTimeout, 30)) * time.Second

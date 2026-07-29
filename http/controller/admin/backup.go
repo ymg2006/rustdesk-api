@@ -17,7 +17,7 @@ import (
 
 type BackupCtl struct{}
 
-// Config 导出配置文件
+// Config export configuration file
 func (b *BackupCtl) Config(ctx *gin.Context) {
 	cfgPath := global.ConfigPath
 	if cfgPath == "" {
@@ -25,7 +25,7 @@ func (b *BackupCtl) Config(ctx *gin.Context) {
 	}
 	data, err := os.ReadFile(cfgPath)
 	if err != nil {
-		response.Fail(ctx, 500, "读取配置文件失败: "+err.Error())
+		response.Fail(ctx, 500, response.TranslateMsg(ctx, "ReadConfigFailed")+err.Error())
 		return
 	}
 
@@ -35,7 +35,7 @@ func (b *BackupCtl) Config(ctx *gin.Context) {
 	ctx.Data(200, "application/octet-stream", data)
 }
 
-// Database 导出数据库备份
+// Database export database backup
 func (b *BackupCtl) Database(ctx *gin.Context) {
 	dbType := global.Config.Gorm.Type
 
@@ -54,12 +54,12 @@ func (b *BackupCtl) Database(ctx *gin.Context) {
 		filename = fmt.Sprintf("rustdesk-api-db-%s.sql", time.Now().Format("20060102_150405"))
 		data, err = b.exportPostgresql()
 	default:
-		response.Fail(ctx, 400, "不支持的数据库类型: "+dbType)
+		response.Fail(ctx, 400, response.TranslateMsg(ctx, "UnsupportedDbType")+dbType)
 		return
 	}
 
 	if err != nil {
-		response.Fail(ctx, 500, "导出数据库失败: "+err.Error())
+		response.Fail(ctx, 500, response.TranslateMsg(ctx, "ExportDbFailed")+err.Error())
 		return
 	}
 
@@ -71,10 +71,10 @@ func (b *BackupCtl) Database(ctx *gin.Context) {
 func (b *BackupCtl) exportSqlite() ([]byte, error) {
 	dbPath := "./data/rustdeskapi.db"
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
-		// 尝试从工作目录或其他常见路径查找
+		// Try looking from the working directory or other common path
 		absPath, _ := filepath.Abs(dbPath)
 		if _, err := os.Stat(absPath); os.IsNotExist(err) {
-			return nil, fmt.Errorf("数据库文件不存在: %s", dbPath)
+			return nil, fmt.Errorf("Database file does not exist:%s", dbPath)
 		}
 		dbPath = absPath
 	}
@@ -113,7 +113,7 @@ func (b *BackupCtl) exportPostgresql() ([]byte, error) {
 		port = "5432"
 	}
 
-	// 使用 PGPASSWORD 环境变量传递密码
+	// Pass the password using the PGPASSWORD environment variable
 	cmd := exec.Command("pg_dump",
 		"-h"+pg.Host,
 		"-p"+port,
@@ -124,16 +124,16 @@ func (b *BackupCtl) exportPostgresql() ([]byte, error) {
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return nil, fmt.Errorf("创建 stderr pipe 失败: %w", err)
+		return nil, fmt.Errorf("Failed to create stderr pipe:%w", err)
 	}
 
 	out, err := cmd.Output()
 	if err != nil {
 		errMsg, _ := io.ReadAll(stderr)
 		if len(errMsg) > 0 {
-			return nil, fmt.Errorf("pg_dump 失败: %s", string(errMsg))
+			return nil, fmt.Errorf("pg_dump failed:%s", string(errMsg))
 		}
-		return nil, fmt.Errorf("pg_dump 执行失败: %w", err)
+		return nil, fmt.Errorf("pg_dump execution failed:%w", err)
 	}
 	return out, nil
 }

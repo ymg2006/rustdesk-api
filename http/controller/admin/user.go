@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pquerna/otp/totp"
+	"github.com/skip2/go-qrcode"
 	"github.com/ymg2006/rustdesk-api/v2/global"
 	"github.com/ymg2006/rustdesk-api/v2/http/request/admin"
 	"github.com/ymg2006/rustdesk-api/v2/http/response"
@@ -12,8 +14,6 @@ import (
 	"github.com/ymg2006/rustdesk-api/v2/model"
 	"github.com/ymg2006/rustdesk-api/v2/service"
 	"github.com/ymg2006/rustdesk-api/v2/utils"
-	"github.com/pquerna/otp/totp"
-	"github.com/skip2/go-qrcode"
 	"gorm.io/gorm"
 	"strconv"
 )
@@ -21,10 +21,10 @@ import (
 type User struct {
 }
 
-// Detail 管理员
-// @Tags 用户
-// @Summary 管理员详情
-// @Description 管理员详情
+// Detail Administrator
+// @Tags user
+// @Summary Admin details
+// @Description Administrator details
 // @Accept  json
 // @Produce  json
 // @Param id path int true "ID"
@@ -43,13 +43,13 @@ func (ct *User) Detail(c *gin.Context) {
 	response.Fail(c, 101, response.TranslateMsg(c, "ItemNotFound"))
 }
 
-// Create 管理员
-// @Tags 用户
-// @Summary 创建管理员
-// @Description 创建管理员
+// Create Administrator
+// @Tags user
+// @Summary Create administrator
+// @Description Create administrator
 // @Accept  json
 // @Produce  json
-// @Param body body admin.UserForm true "管理员信息"
+// @Param body body admin.UserForm true "Administrator information"
 // @Success 200 {object} response.Response{data=model.User}
 // @Failure 500 {object} response.Response
 // @Router /admin/user/create [post]
@@ -66,7 +66,7 @@ func (ct *User) Create(c *gin.Context) {
 		return
 	}
 	u := f.ToUser()
-	// 兼容旧字段：设置了 is_admin=true 但未传 role 时同步
+	// Compatible with old fields: synchronization when is_admin=true is set but role is not passed
 	if u.Role == "" && u.IsAdmin != nil && *u.IsAdmin {
 		u.Role = "admin"
 	} else if u.Role == "" {
@@ -80,15 +80,15 @@ func (ct *User) Create(c *gin.Context) {
 	response.Success(c, nil)
 }
 
-// List 列表
-// @Tags 用户
-// @Summary 管理员列表
-// @Description 管理员列表
+// List list
+// @Tags user
+// @Summary Admin List
+// @Description Administrator list
 // @Accept  json
 // @Produce  json
-// @Param page query int false "页码"
-// @Param page_size query int false "页大小"
-// @Param username query int false "账户"
+// @Param page query int false "page number"
+// @Param page_size query int false "page size"
+// @Param username query int false "Account"
 // @Success 200 {object} response.Response{data=model.UserList}
 // @Failure 500 {object} response.Response
 // @Router /admin/user/list [get]
@@ -103,7 +103,7 @@ func (ct *User) List(c *gin.Context) {
 		if query.Username != "" {
 			tx.Where("username like ?", "%"+query.Username+"%")
 		}
-		// 按部门筛选时，包含其所有子部门下的用户
+		// When filtering by department, users under all sub-departments are included.
 		if query.GroupId > 0 {
 			ids := service.AllService.GroupService.DescendantIds(query.GroupId)
 			ids = append(ids, query.GroupId)
@@ -113,13 +113,13 @@ func (ct *User) List(c *gin.Context) {
 	response.Success(c, res)
 }
 
-// Update 编辑
-// @Tags 用户
-// @Summary 管理员编辑
-// @Description 管理员编辑
+// Update Edit
+// @Tags user
+// @Summary Admin edit
+// @Description Admin edit
 // @Accept  json
 // @Produce  json
-// @Param body body admin.UserForm true "用户信息"
+// @Param body body admin.UserForm true "User information"
 // @Success 200 {object} response.Response{data=model.User}
 // @Failure 500 {object} response.Response
 // @Router /admin/user/update [post]
@@ -140,7 +140,7 @@ func (ct *User) Update(c *gin.Context) {
 		return
 	}
 	u := f.ToUser()
-	// 兼容旧字段：设置了 is_admin=true 但未传 role 时同步
+	// Compatible with old fields: synchronization when is_admin=true is set but role is not passed
 	if u.Role == "" && u.IsAdmin != nil && *u.IsAdmin {
 		u.Role = "admin"
 	} else if u.Role == "" {
@@ -154,13 +154,13 @@ func (ct *User) Update(c *gin.Context) {
 	response.Success(c, nil)
 }
 
-// Delete 删除
-// @Tags 用户
-// @Summary 管理员删除
-// @Description 管理员编删除
+// Delete Delete
+// @Tags user
+// @Summary Admin deleted
+// @Description Administrator edited and deleted
 // @Accept  json
 // @Produce  json
-// @Param body body admin.UserForm true "用户信息"
+// @Param body body admin.UserForm true "User information"
 // @Success 200 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /admin/user/delete [post]
@@ -190,13 +190,13 @@ func (ct *User) Delete(c *gin.Context) {
 	response.Fail(c, 101, response.TranslateMsg(c, "ItemNotFound"))
 }
 
-// UpdatePassword 修改密码
-// @Tags 用户
-// @Summary 修改密码
-// @Description 修改密码
+// UpdatePassword Change password
+// @Tags user
+// @Summary Change password
+// @Description change password
 // @Accept  json
 // @Produce  json
-// @Param body body admin.UserPasswordForm true "用户信息"
+// @Param body body admin.UserPasswordForm true "User information"
 // @Success 200 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /admin/user/updatePassword [post]
@@ -222,15 +222,15 @@ func (ct *User) UpdatePassword(c *gin.Context) {
 		response.Fail(c, 101, response.TranslateMsg(c, "OperationFailed")+err.Error())
 		return
 	}
-	// 改密码后清除该用户所有会话令牌，强制重新登录，防止旧 token 被冒用
+	// After changing the password, clear all session tokens for the user and force a re-login to prevent old tokens from being used fraudulently.
 	_ = service.AllService.UserService.FlushToken(u)
 	response.Success(c, nil)
 }
 
-// Current 当前用户
-// @Tags 用户
-// @Summary 当前用户
-// @Description 当前用户
+// Current current user
+// @Tags user
+// @Summary current user
+// @Description current user
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} response.Response{data=admin.LoginPayload}
@@ -241,18 +241,18 @@ func (ct *User) Current(c *gin.Context) {
 	u := service.AllService.UserService.CurUser(c)
 	lp := &adResp.LoginPayload{}
 	lp.FromUser(u)
-	lp.Token = "" // 不向前端暴露 token（已通过 HttpOnly Cookie 下发）
+	lp.Token = "" // Do not expose the token to the front end (has been issued through HttpOnly Cookie)
 	lp.RouteNames = service.AllService.UserService.RouteNames(u)
 	response.Success(c, lp)
 }
 
-// ChangeCurPwd 修改当前用户密码
-// @Tags 用户
-// @Summary 修改当前用户密码
-// @Description 修改当前用户密码
+// ChangeCurPwd changes the current user password
+// @Tags user
+// @Summary Modify the current user password
+// @Description Modify the current user password
 // @Accept  json
 // @Produce  json
-// @Param body body admin.ChangeCurPasswordForm true "用户信息"
+// @Param body body admin.ChangeCurPasswordForm true "User information"
 // @Success 200 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /admin/user/changeCurPwd [post]
@@ -283,15 +283,15 @@ func (ct *User) ChangeCurPwd(c *gin.Context) {
 		response.Fail(c, 101, response.TranslateMsg(c, "OperationFailed")+err.Error())
 		return
 	}
-	// 改密码后清除当前用户所有会话令牌，强制重新登录，防止旧 token 被冒用
+	// After changing the password, clear all session tokens of the current user and force a re-login to prevent old tokens from being used fraudulently.
 	_ = service.AllService.UserService.FlushToken(u)
 	response.Success(c, nil)
 }
 
 // MyOauth
-// @Tags 用户
-// @Summary 我的授权
-// @Description 我的授权
+// @Tags user
+// @Summary My authorization
+// @Description My authorization
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} response.Response{data=[]admin.UserOauthItem}
@@ -324,9 +324,9 @@ func (ct *User) MyOauth(c *gin.Context) {
 
 // ===================== MFA (TOTP) =====================
 
-// MfaSetup 生成 TOTP 密钥与二维码，暂存密钥（尚未启用）
-// @Tags 用户
-// @Summary MFA 初始化
+// MfaSetup generates TOTP keys and QR codes, and temporarily stores keys (not yet enabled)
+// @Tags user
+// @Summary MFA initialization
 // @Router /admin/user/mfa/setup [post]
 // @Security token
 func (ct *User) MfaSetup(c *gin.Context) {
@@ -355,9 +355,9 @@ func (ct *User) MfaSetup(c *gin.Context) {
 	})
 }
 
-// MfaEnable 校验动态码后启用 MFA，返回一次性恢复码
-// @Tags 用户
-// @Summary MFA 启用
+// MfaEnable enables MFA after verifying the dynamic code and returns a one-time recovery code
+// @Tags user
+// @Summary MFA enabled
 // @Router /admin/user/mfa/enable [post]
 // @Security token
 func (ct *User) MfaEnable(c *gin.Context) {
@@ -388,9 +388,9 @@ func (ct *User) MfaEnable(c *gin.Context) {
 	response.Success(c, gin.H{"recovery_codes": codes})
 }
 
-// MfaDisable 校验登录密码后关闭 MFA
-// @Tags 用户
-// @Summary MFA 关闭
+// MfaDisable closes MFA after verifying the login password
+// @Tags user
+// @Summary MFA Close
 // @Router /admin/user/mfa/disable [post]
 // @Security token
 func (ct *User) MfaDisable(c *gin.Context) {
@@ -414,14 +414,14 @@ func (ct *User) MfaDisable(c *gin.Context) {
 		response.Fail(c, 101, response.TranslateMsg(c, "OperationFailed")+err.Error())
 		return
 	}
-	// 关闭 MFA 后清除当前用户所有会话令牌，强制重新登录，防止旧 token 被冒用
+	// After turning off MFA, clear all session tokens of the current user and force a re-login to prevent old tokens from being used fraudulently.
 	_ = service.AllService.UserService.FlushToken(u)
 	response.Success(c, nil)
 }
 
-// MfaStatus 返回当前用户 MFA 启用状态
-// @Tags 用户
-// @Summary MFA 状态
+// MfaStatus returns the current user MFA enablement status
+// @Tags user
+// @Summary MFA Status
 // @Router /admin/user/mfa/status [get]
 // @Security token
 func (ct *User) MfaStatus(c *gin.Context) {
@@ -429,9 +429,9 @@ func (ct *User) MfaStatus(c *gin.Context) {
 	response.Success(c, gin.H{"mfa_enabled": u.MfaEnabled})
 }
 
-// MfaReset 管理员强制关闭指定用户的 MFA（用户丢失验证器/恢复码时的救援手段）
-// @Tags 用户
-// @Summary 管理员重置用户 MFA
+// MfaReset allows the administrator to forcefully close the specified user's MFA (rescue method when the user loses the authenticator/recovery code)
+// @Tags user
+// @Summary Administrator resets user MFA
 // @Router /admin/user/mfa/reset [post]
 // @Security token
 func (ct *User) MfaReset(c *gin.Context) {
@@ -454,7 +454,7 @@ func (ct *User) MfaReset(c *gin.Context) {
 		response.Fail(c, 101, response.TranslateMsg(c, "OperationFailed")+err.Error())
 		return
 	}
-	// 重置 MFA 后清除该用户所有会话令牌，强制重新登录，防止旧 token 被冒用
+	// After resetting MFA, clear all session tokens of the user and force a re-login to prevent old tokens from being used fraudulently.
 	_ = service.AllService.UserService.FlushToken(u)
 	response.Success(c, nil)
 }
@@ -486,15 +486,15 @@ func (ct *User) Register(c *gin.Context) {
 		return
 	}
 
-	// 授权码验证：当开启了邀请模式时，必须提供有效授权码
-	// 授权码同时控制注册资格 + 订阅激活
+	// Authorization code verification: When invitation mode is turned on, a valid authorization code must be provided
+	// The authorization code controls registration qualification + subscription activation at the same time
 	var userExpiredAt int64
 	if global.Config.App.InviteOnly {
 		if f.InviteCode == "" {
 			response.Fail(c, 101, response.TranslateMsg(c, "InviteCodeRequired"))
 			return
 		}
-		// 用 InviteCode（授权码）替代旧的 Invitation
+		// Replace old Invitation with InviteCode (authorization code)
 		ics := &service.InviteCodeService{}
 		ic := ics.InfoByCode(f.InviteCode)
 		if ic == nil || ic.Id == 0 {
@@ -512,7 +512,7 @@ func (ct *User) Register(c *gin.Context) {
 	}
 
 	regStatus := model.StatusCode(global.Config.App.RegisterStatus)
-	// 注册状态可能未配置，默认启用
+	// Registration status may not be configured and is enabled by default
 	if regStatus != model.COMMON_STATUS_DISABLED && regStatus != model.COMMON_STATUS_ENABLE {
 		regStatus = model.COMMON_STATUS_ENABLE
 	}
@@ -523,13 +523,13 @@ func (ct *User) Register(c *gin.Context) {
 		return
 	}
 
-	// 注册成功后消耗授权码 + 激活订阅（原子更新防止并发重复使用）
+	// After successful registration, consume the authorization code + activate the subscription (atomic update prevents concurrent reuse)
 	if global.Config.App.InviteOnly && f.InviteCode != "" {
 		ics := &service.InviteCodeService{}
 		ic := ics.InfoByCode(f.InviteCode)
 		if ic != nil && ic.Id > 0 && ic.Status == "unused" {
 			now := time.Now()
-			// 原子更新：只更新 status="unused" 的记录
+			// Atomic update: only update records with status="unused"
 			result := global.DB.Model(&model.InviteCode{}).
 				Where("id = ? AND status = ?", ic.Id, "unused").
 				Updates(map[string]interface{}{
@@ -538,7 +538,7 @@ func (ct *User) Register(c *gin.Context) {
 					"used_at": &now,
 				})
 			if result.Error != nil || result.RowsAffected == 0 {
-				// 原子更新失败（已被别人使用），删除已创建的用户
+				// Atomic update failed (already used by someone else), deleted the created user
 				global.DB.Delete(&model.User{}, u.Id)
 				response.Fail(c, 101, response.TranslateMsg(c, "InviteCodeInvalid"))
 				return
@@ -556,18 +556,18 @@ func (ct *User) Register(c *gin.Context) {
 	}
 
 	if regStatus == model.COMMON_STATUS_DISABLED {
-		// 需要管理员审核
+		// Requires administrator review
 		response.Fail(c, 101, response.TranslateMsg(c, "RegisterSuccessWaitAdminConfirm"))
 		return
 	}
-	// 注册成功后自动登录
+	// Automatically log in after successful registration
 	ut := service.AllService.UserService.Login(u, &model.LoginLog{
-		UserId: u.Id,
-		Client: model.LoginLogClientWebAdmin,
-		Uuid:   "",
-		Ip:     c.ClientIP(),
+		UserId:    u.Id,
+		Client:    model.LoginLogClientWebAdmin,
+		Uuid:      "",
+		Ip:        c.ClientIP(),
 		UserAgent: c.GetHeader("User-Agent"),
-		Type:   model.LoginLogTypeAccount,
+		Type:      model.LoginLogTypeAccount,
 	})
 	responseLoginSuccess(c, u, ut)
 }
