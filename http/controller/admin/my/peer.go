@@ -45,13 +45,13 @@ func (ct *Peer) List(c *gin.Context) {
 	var sharedIds []string
 	if u.GroupId > 0 {
 		service.DB.Raw(`
-			SELECT ab.id FROM address_book ab
+			SELECT ab.id FROM address_books ab
 			INNER JOIN address_book_collection_rules r ON ab.collection_id = r.collection_id
 			WHERE (r.type = 1 AND r.to_id = ?) OR (r.type = 2 AND r.to_id = ?)
 		`, u.Id, u.GroupId).Pluck("id", &sharedIds)
 	} else {
 		service.DB.Raw(`
-			SELECT ab.id FROM address_book ab
+			SELECT ab.id FROM address_books ab
 			INNER JOIN address_book_collection_rules r ON ab.collection_id = r.collection_id
 			WHERE r.type = 1 AND r.to_id = ?
 		`, u.Id).Pluck("id", &sharedIds)
