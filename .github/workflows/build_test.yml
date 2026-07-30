@@ -125,7 +125,7 @@ jobs:
               tar -xf "${MUSL_ARCHIVE}"
               export PATH="${PATH}:${PWD}/aarch64-linux-musl-cross/bin"
 
-              GOOS=${{ matrix.job.goos }} GOARCH=arm64 CC=aarch64-linux-musl-gcc CGO_LDFLAGS="-static" CGO_ENABLED=1 go build -ldflags "-s -w" -o ./release/apimain ./cmd/apimain.go
+              GOOS=${{ matrix.job.goos }} GOARCH=arm64 CC=aarch64-linux-musl-gcc CGO_LDFLAGS="-static" CGO_ENABLED=1 go build -ldflags "-s -w -linkmode=external -extldflags=-static" -o ./release/apimain ./cmd/apimain.go
             elif [ "${{ matrix.job.platform }}" = "armv7l" ]; then
               MUSL_ARCHIVE="arm-linux-musleabihf-cross.tgz"
               MUSL_URL="https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/${MUSL_ARCHIVE}"
@@ -143,10 +143,10 @@ jobs:
               tar -xf "${MUSL_ARCHIVE}"
               export PATH="${PATH}:${PWD}/arm-linux-musleabihf-cross/bin"
 
-              GOOS=${{ matrix.job.goos }} GOARCH=arm GOARM=7 CC=arm-linux-musleabihf-gcc CGO_LDFLAGS="-static" CGO_ENABLED=1 go build -ldflags "-s -w" -o ./release/apimain ./cmd/apimain.go
+              GOOS=${{ matrix.job.goos }} GOARCH=arm GOARM=7 CC=arm-linux-musleabihf-gcc CGO_LDFLAGS="-static" CGO_ENABLED=1 go build -ldflags "-s -w -linkmode=external -extldflags=-static" -o ./release/apimain ./cmd/apimain.go
             else
               sudo apt-get install musl musl-dev musl-tools -y
-              GOOS=${{ matrix.job.goos }} GOARCH=${{ matrix.job.platform }} CC=musl-gcc CGO_LDFLAGS="-static" CGO_ENABLED=1 go build -ldflags "-s -w" -o ./release/apimain ./cmd/apimain.go
+              GOOS=${{ matrix.job.goos }} GOARCH=${{ matrix.job.platform }} CC=musl-gcc CGO_LDFLAGS="-static" CGO_ENABLED=1 go build -ldflags "-s -w -linkmode=external -extldflags=-static" -o ./release/apimain ./cmd/apimain.go
             fi
             tar -czf ${{ matrix.job.goos}}-${{ matrix.job.platform }}.${{matrix.job.file_ext}} ./release
           fi
