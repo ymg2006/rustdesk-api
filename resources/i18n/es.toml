@@ -359,7 +359,7 @@ one = "Canal de notificación no encontrado."
 other = "Canal de notificación no encontrado."
 
 [IdRequired]
-description = "ID required."
+description = "Se requiere el ID."
 one = "Se requiere ID."
 other = "Se requiere ID."
 
@@ -384,12 +384,18 @@ one = "El nombre y la dirección de descarga son obligatorios."
 other = "El nombre y la dirección de descarga son obligatorios."
 
 [AnnouncementNotFound]
-description = "Announcement not found."
+description = "Anuncio no encontrado."
 one = "Anuncio no encontrado."
 other = "Anuncio no encontrado."
 
 [TitleRequired]
-description = "Title required."
+description = "Se requiere el título."
+
+[ContentRequired]
+description = "Se requiere el contenido."
+
+[InvalidAnnouncementStatus]
+description = "El estado del anuncio debe ser 0 o 1."
 one = "Se requiere el título."
 other = "Se requiere el título."
 
@@ -454,22 +460,22 @@ one = "El pedido no ha sido pagado."
 other = "El pedido no ha sido pagado."
 
 [CodeNotFound]
-description = "Code not found."
+description = "Código no encontrado."
 one = "Código no encontrado."
 other = "Código no encontrado."
 
 [CodeUsed]
-description = "Code used."
+description = "El código ya ha sido utilizado."
 one = "El código ya ha sido usado."
 other = "El código ya ha sido usado."
 
 [CodeRevoked]
-description = "Code revoked."
+description = "El código ha sido revocado."
 one = "El código ha sido revocado."
 other = "El código ha sido revocado."
 
 [CodeExpired]
-description = "Code expired."
+description = "El código ha caducado."
 one = "El código ha caducado."
 other = "El código ha caducado."
 

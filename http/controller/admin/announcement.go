@@ -60,7 +60,7 @@ func (a *Announcement) Create(c *gin.Context) {
 		return
 	}
 	if req.Content == "" {
-		response.Fail(c, 400, response.TranslateMsg(c, "ParamsError"))
+		response.Fail(c, 400, response.TranslateMsg(c, "ContentRequired"))
 		return
 	}
 	status := 1
@@ -68,7 +68,7 @@ func (a *Announcement) Create(c *gin.Context) {
 		status = *req.Status
 	}
 	if status != 0 && status != 1 {
-		response.Fail(c, 400, response.TranslateMsg(c, "ParamsError"))
+		response.Fail(c, 400, response.TranslateMsg(c, "InvalidAnnouncementStatus"))
 		return
 	}
 	announcement := &model.Announcement{
@@ -94,8 +94,16 @@ func (a *Announcement) Update(c *gin.Context) {
 	}
 	req.Title = strings.TrimSpace(req.Title)
 	req.Content = strings.TrimSpace(req.Content)
-	if req.Title == "" || req.Content == "" || (req.Status != 0 && req.Status != 1) {
-		response.Fail(c, 400, response.TranslateMsg(c, "ParamsError"))
+	if req.Title == "" {
+		response.Fail(c, 401, response.TranslateMsg(c, "TitleRequired"))
+		return
+	}
+	if req.Content == "" {
+		response.Fail(c, 400, response.TranslateMsg(c, "ContentRequired"))
+		return
+	}
+	if req.Status != 0 && req.Status != 1 {
+		response.Fail(c, 400, response.TranslateMsg(c, "InvalidAnnouncementStatus"))
 		return
 	}
 	announcement := &model.Announcement{

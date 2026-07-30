@@ -359,7 +359,7 @@ one = "Канал уведомлений не найден."
 other = "Канал уведомлений не найден."
 
 [IdRequired]
-description = "ID required."
+description = "Требуется идентификатор."
 one = "Требуется ID."
 other = "Требуется ID."
 
@@ -384,12 +384,18 @@ one = "Требуются имя и адрес загрузки."
 other = "Требуются имя и адрес загрузки."
 
 [AnnouncementNotFound]
-description = "Announcement not found."
+description = "Объявление не найдено."
 one = "Объявление не найдено."
 other = "Объявление не найдено."
 
 [TitleRequired]
-description = "Title required."
+description = "Требуется заголовок."
+
+[ContentRequired]
+description = "Требуется содержимое."
+
+[InvalidAnnouncementStatus]
+description = "Статус объявления должен быть 0 или 1."
 one = "Требуется заголовок."
 other = "Требуется заголовок."
 
@@ -454,22 +460,22 @@ one = "Заказ не оплачен."
 other = "Заказ не оплачен."
 
 [CodeNotFound]
-description = "Code not found."
+description = "Код не найден."
 one = "Код не найден."
 other = "Код не найден."
 
 [CodeUsed]
-description = "Code used."
+description = "Код уже использован."
 one = "Код уже использован."
 other = "Код уже использован."
 
 [CodeRevoked]
-description = "Code revoked."
+description = "Код отозван."
 one = "Код отозван."
 other = "Код отозван."
 
 [CodeExpired]
-description = "Code expired."
+description = "Срок действия кода истёк."
 one = "Срок действия кода истек."
 other = "Срок действия кода истек."
 

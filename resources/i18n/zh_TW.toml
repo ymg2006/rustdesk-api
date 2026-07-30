@@ -359,7 +359,7 @@ one = "通知通道不存在。"
 other = "通知通道不存在。"
 
 [IdRequired]
-description = "ID required."
+description = "ID 為必填項。"
 one = "ID不能為空。"
 other = "ID不能為空。"
 
@@ -384,12 +384,18 @@ one = "名稱和下載地址不能為空。"
 other = "名稱和下載地址不能為空。"
 
 [AnnouncementNotFound]
-description = "Announcement not found."
+description = "找不到公告。"
 one = "公告不存在。"
 other = "公告不存在。"
 
 [TitleRequired]
-description = "Title required."
+description = "標題為必填項。"
+
+[ContentRequired]
+description = "內容為必填項。"
+
+[InvalidAnnouncementStatus]
+description = "公告狀態必須為 0 或 1。"
 one = "標題不能為空。"
 other = "標題不能為空。"
 
@@ -454,22 +460,22 @@ one = "訂單未付款。"
 other = "訂單未付款。"
 
 [CodeNotFound]
-description = "Code not found."
+description = "找不到邀請碼。"
 one = "兌換碼不存在。"
 other = "兌換碼不存在。"
 
 [CodeUsed]
-description = "Code used."
+description = "邀請碼已被使用。"
 one = "兌換碼已被使用。"
 other = "兌換碼已被使用。"
 
 [CodeRevoked]
-description = "Code revoked."
+description = "邀請碼已被撤銷。"
 one = "兌換碼已撤銷。"
 other = "兌換碼已撤銷。"
 
 [CodeExpired]
-description = "Code expired."
+description = "邀請碼已過期。"
 one = "兌換碼已過期。"
 other = "兌換碼已過期。"
 

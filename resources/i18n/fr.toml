@@ -359,7 +359,7 @@ one = "Canal de notification introuvable."
 other = "Canal de notification introuvable."
 
 [IdRequired]
-description = "ID required."
+description = "L’identifiant est requis."
 one = "L'ID est requis."
 other = "L'ID est requis."
 
@@ -384,12 +384,18 @@ one = "Le nom et l'URL de téléchargement sont requis."
 other = "Le nom et l'URL de téléchargement sont requis."
 
 [AnnouncementNotFound]
-description = "Announcement not found."
+description = "Annonce introuvable."
 one = "Annonce introuvable."
 other = "Annonce introuvable."
 
 [TitleRequired]
-description = "Title required."
+description = "Le titre est requis."
+
+[ContentRequired]
+description = "Le contenu est requis."
+
+[InvalidAnnouncementStatus]
+description = "Le statut de l’annonce doit être 0 ou 1."
 one = "Le titre est requis."
 other = "Le titre est requis."
 
@@ -454,22 +460,22 @@ one = "La commande n'a pas été payée."
 other = "La commande n'a pas été payée."
 
 [CodeNotFound]
-description = "Code not found."
+description = "Code introuvable."
 one = "Code introuvable."
 other = "Code introuvable."
 
 [CodeUsed]
-description = "Code used."
+description = "Le code a déjà été utilisé."
 one = "Le code a déjà été utilisé."
 other = "Le code a déjà été utilisé."
 
 [CodeRevoked]
-description = "Code revoked."
+description = "Le code a été révoqué."
 one = "Le code a été révoqué."
 other = "Le code a été révoqué."
 
 [CodeExpired]
-description = "Code expired."
+description = "Le code a expiré."
 one = "Le code a expiré."
 other = "Le code a expiré."
 

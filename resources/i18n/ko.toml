@@ -352,7 +352,7 @@ one = "알림 채널을 찾을 수 없습니다."
 other = "알림 채널을 찾을 수 없습니다."
 
 [IdRequired]
-description = "ID required."
+description = "ID가 필요합니다."
 one = "ID가 필요합니다."
 other = "ID가 필요합니다."
 
@@ -377,12 +377,18 @@ one = "이름과 다운로드 주소가 필요합니다."
 other = "이름과 다운로드 주소가 필요합니다."
 
 [AnnouncementNotFound]
-description = "Announcement not found."
+description = "공지사항을 찾을 수 없습니다."
 one = "공지를 찾을 수 없습니다."
 other = "공지를 찾을 수 없습니다."
 
 [TitleRequired]
-description = "Title required."
+description = "제목을 입력해야 합니다."
+
+[ContentRequired]
+description = "내용을 입력해야 합니다."
+
+[InvalidAnnouncementStatus]
+description = "공지사항 상태는 0 또는 1이어야 합니다."
 one = "제목이 필요합니다."
 other = "제목이 필요합니다."
 
@@ -447,22 +453,22 @@ one = "주문이 결제되지 않았습니다."
 other = "주문이 결제되지 않았습니다."
 
 [CodeNotFound]
-description = "Code not found."
+description = "코드를 찾을 수 없습니다."
 one = "코드를 찾을 수 없습니다."
 other = "코드를 찾을 수 없습니다."
 
 [CodeUsed]
-description = "Code used."
+description = "이미 사용된 코드입니다."
 one = "코드가 이미 사용되었습니다."
 other = "코드가 이미 사용되었습니다."
 
 [CodeRevoked]
-description = "Code revoked."
+description = "취소된 코드입니다."
 one = "코드가 취소되었습니다."
 other = "코드가 취소되었습니다."
 
 [CodeExpired]
-description = "Code expired."
+description = "만료된 코드입니다."
 one = "코드가 만료되었습니다."
 other = "코드가 만료되었습니다."
 

@@ -381,6 +381,12 @@ other = "Announcement not found."
 
 [TitleRequired]
 description = "Title required."
+
+[ContentRequired]
+description = "Content required."
+
+[InvalidAnnouncementStatus]
+description = "Announcement status must be 0 or 1."
 one = "Title is required."
 other = "Title is required."
 
