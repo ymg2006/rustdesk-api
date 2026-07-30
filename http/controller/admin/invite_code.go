@@ -2,6 +2,7 @@ package admin
 
 import (
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -146,6 +147,29 @@ func (ac *AdminInviteCodeController) Revoke(c *gin.Context) {
 	ics := &service.InviteCodeService{}
 	if err := ics.Revoke(uint(id)); err != nil {
 		response.Fail(c, 500, err.Error())
+		return
+	}
+	response.Success(c, nil)
+}
+
+// Delete permanently deletes an unused or revoked invitation code.
+func (ac *AdminInviteCodeController) Delete(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil || id == 0 {
+		response.Fail(c, 400, response.TranslateMsg(c, "InvalidId"))
+		return
+	}
+
+	ics := &service.InviteCodeService{}
+	if err := ics.Delete(uint(id)); err != nil {
+		switch {
+		case errors.Is(err, service.ErrInviteCodeNotFound):
+			response.Fail(c, 404, response.TranslateMsg(c, "CodeNotFound"))
+		case errors.Is(err, service.ErrInviteCodeUsed):
+			response.Fail(c, 409, err.Error())
+		default:
+			response.Fail(c, 500, err.Error())
+		}
 		return
 	}
 	response.Success(c, nil)

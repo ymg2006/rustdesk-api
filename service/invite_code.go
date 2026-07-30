@@ -2,6 +2,7 @@ package service
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -26,6 +27,11 @@ func (s *InviteCodeService) Db() *gorm.DB {
 }
 
 const base62Charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
+var (
+	ErrInviteCodeNotFound = errors.New("invite code not found")
+	ErrInviteCodeUsed     = errors.New("used invite code cannot be deleted")
+)
 
 // generateCode generates a 32-bit base62 random string
 func (s *InviteCodeService) generateCode() string {
@@ -162,6 +168,38 @@ func (s *InviteCodeService) Revoke(id uint) error {
 		return fmt.Errorf("code not found or already used/revoked")
 	}
 	return nil
+}
+
+// Delete permanently deletes an invite code by ID.
+//
+// Used codes are retained because they are redemption audit records and, for
+// order-bound codes, are also used to make ClaimCode idempotent. Unused codes
+// (expired or not) and revoked codes may be deleted by an administrator.
+func (s *InviteCodeService) Delete(id uint) error {
+	return s.Db().Transaction(func(tx *gorm.DB) error {
+		ic := &model.InviteCode{}
+		if err := tx.Where("id = ?", id).First(ic).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrInviteCodeNotFound
+			}
+			return err
+		}
+
+		if ic.Status == "used" || ic.UsedBy != 0 || ic.UsedAt != nil {
+			return ErrInviteCodeUsed
+		}
+
+		res := tx.Where("id = ? AND status <> ?", id, "used").
+			Delete(&model.InviteCode{})
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			// The status may have changed concurrently after it was read.
+			return ErrInviteCodeUsed
+		}
+		return nil
+	})
 }
 
 // List Query invitation code list by page

@@ -504,6 +504,7 @@ func InviteCodeBind(adg *gin.RouterGroup) {
 	rg.GET("", cont.List)
 	rg.POST("", cont.Create)
 	rg.POST("/:id/revoke", cont.Revoke)
+	rg.DELETE("/:id/delete", cont.Delete)
 	rg.GET("/export", cont.Export)
 }
 
