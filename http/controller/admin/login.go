@@ -7,26 +7,26 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/global"
-	"github.com/lejianwen/rustdesk-api/v2/http/controller/api"
-	"github.com/lejianwen/rustdesk-api/v2/http/request/admin"
-	apiReq "github.com/lejianwen/rustdesk-api/v2/http/request/api"
-	"github.com/lejianwen/rustdesk-api/v2/http/response"
-	adResp "github.com/lejianwen/rustdesk-api/v2/http/response/admin"
-	"github.com/lejianwen/rustdesk-api/v2/model"
-	"github.com/lejianwen/rustdesk-api/v2/service"
+	"github.com/ymg2006/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/http/controller/api"
+	"github.com/ymg2006/rustdesk-api/v2/http/request/admin"
+	apiReq "github.com/ymg2006/rustdesk-api/v2/http/request/api"
+	"github.com/ymg2006/rustdesk-api/v2/http/response"
+	adResp "github.com/ymg2006/rustdesk-api/v2/http/response/admin"
+	"github.com/ymg2006/rustdesk-api/v2/model"
+	"github.com/ymg2006/rustdesk-api/v2/service"
 )
 
 type Login struct {
 }
 
-// Login 登录
-// @Tags 登录
-// @Summary 登录
-// @Description 登录
+// Login Login
+// @Tags login
+// @Summary Login
+// @Description Login
 // @Accept  json
 // @Produce  json
-// @Param body body admin.Login true "登录信息"
+// @Param body body admin.Login true "Login information"
 // @Success 200 {object} response.Response{data=admin.LoginPayload}
 // @Failure 500 {object} response.Response
 // @Router /admin/login [post]
@@ -37,7 +37,7 @@ func (ct *Login) Login(c *gin.Context) {
 		return
 	}
 
-	// 检查登录限制
+	// Check login restrictions
 	loginLimiter := global.LoginLimiter
 	clientIp := c.ClientIP()
 	_, needCaptcha := loginLimiter.CheckSecurityStatus(clientIp)
@@ -59,7 +59,7 @@ func (ct *Login) Login(c *gin.Context) {
 		return
 	}
 
-	// 检查是否需要验证码
+	// Check if a verification code is required
 	if needCaptcha {
 		if f.CaptchaId == "" || f.Captcha == "" || !loginLimiter.VerifyCaptcha(f.CaptchaId, f.Captcha) {
 			response.Fail(c, 101, response.TranslateMsg(c, "CaptchaError"))
@@ -89,17 +89,7 @@ func (ct *Login) Login(c *gin.Context) {
 		return
 	}
 
-	// 检查账户是否过期
-	if service.AllService.UserService.IsUserExpired(u) {
-		if needCaptcha {
-			response.Fail(c, 110, response.TranslateMsg(c, "AccountExpired"))
-			return
-		}
-		response.Fail(c, 101, response.TranslateMsg(c, "AccountExpired"))
-		return
-	}
-
-	// MFA 二次验证：已启用则下发临时令牌，前端进入动态码输入步骤
+	// MFA two-step verification: If enabled, a temporary token will be issued, and the front end will enter the dynamic code input step.
 	if u.MfaEnabled {
 		mfaToken := global.Jwt.GenerateMfaToken(u.Id)
 		global.Logger.Infof("[MFA] Login() uid=%d mfa_token_len=%d", u.Id, len(mfaToken))
@@ -108,26 +98,27 @@ func (ct *Login) Login(c *gin.Context) {
 	}
 
 	ut := service.AllService.UserService.Login(u, &model.LoginLog{
-		UserId:   u.Id,
-		Client:   model.LoginLogClientWebAdmin,
-		Uuid:     "", //must be empty
-		Ip:       clientIp,
+		UserId:    u.Id,
+		Client:    model.LoginLogClientWebAdmin,
+		Uuid:      "", //must be empty
+		Ip:        clientIp,
 		UserAgent: c.GetHeader("User-Agent"),
-		Type:     model.LoginLogTypeAccount,
-		Platform: f.Platform,
+		Type:      model.LoginLogTypeAccount,
+		Platform:  f.Platform,
 	})
 
-	// 登录成功，清除登录限制
+	// Login successful, clear login restrictions
 	loginLimiter.RemoveAttempts(clientIp)
 	responseLoginSuccess(c, u, ut)
 }
-// MfaLogin MFA 二次验证后签发正式令牌
-// @Tags 登录
-// @Summary MFA 二次验证登录
-// @Description 使用登录时返回的 mfa_token 与动态码/恢复码换取正式登录令牌
+
+// MfaLogin MFA issues official token after secondary verification
+// @Tags login
+// @Summary MFA two-step verification login
+// @Description Use the mfa_token returned when logging in and the dynamic code/recovery code to exchange for the official login token
 // @Accept  json
 // @Produce  json
-// @Param body body admin.MfaLogin true "MFA 验证信息"
+// @Param body body admin.MfaLogin true "MFA verification information"
 // @Success 200 {object} response.Response{data=admin.LoginPayload}
 // @Failure 500 {object} response.Response
 // @Router /admin/login/mfa [post]
@@ -137,15 +128,15 @@ func (ct *Login) MfaLogin(c *gin.Context) {
 		response.Fail(c, 101, response.TranslateMsg(c, "ParamsError")+err.Error())
 		return
 	}
-	// 记录已解析出的关键字段（不记录敏感值），用于排查 mfa_token/动态码相关问题。
-	// 注意：不可在此处再次调用 c.ShouldBindJSON，因为请求体已被上方的 ShouldBindJSON(f) 消费，
-	// 二次读取会得到空体，导致日志失真且可能干扰后续处理。
+	// Record parsed key fields (excluding sensitive values) to troubleshoot MFA token and one-time-code issues.
+	// Note: c.ShouldBindJSON cannot be called again here because the request body has been consumed by ShouldBindJSON(f) above.
+	// Secondary reading will result in empty bodies, causing log distortion and possibly interfering with subsequent processing.
 	global.Logger.Infof("[MFA] MfaLogin parsed={MfaToken_len=%d HasCode=%t HasRecoveryCode=%t Platform=%q}",
 		len(f.MfaToken), f.Code != "", f.RecoveryCode != "", f.Platform)
 
 	errList := global.Validator.ValidStruct(c, f)
 	if len(errList) > 0 {
-		// mfa_token 彻底缺失：返回专用错误码 114 引导前端重新走登录流程
+		// mfa_token is completely missing: return special error code 114 to guide the front end to re-login process
 		if f.MfaToken == "" {
 			global.Logger.Warnf("[MFA] MfaLogin: mfa_token missing (body and header both empty)")
 			response.Fail(c, 114, response.TranslateMsg(c, "MfaTokenMissing"))
@@ -157,7 +148,7 @@ func (ct *Login) MfaLogin(c *gin.Context) {
 	}
 	uid, err := global.Jwt.ParseMfaToken(f.MfaToken)
 	if err != nil {
-		// SECURITY: MFA 临时令牌短时效(5分钟)且敏感，日志中只记录长度，避免泄露可被重放的令牌。
+		// SECURITY: MFA temporary tokens are short-lived (5 minutes) and sensitive. Only the length is recorded in the log to avoid leaking tokens that can be replayed.
 		global.Logger.Warnf("[MFA] MfaLogin: ParseMfaToken failed, mfa_token_len=%d err=%v", len(f.MfaToken), err)
 		response.Fail(c, 101, response.TranslateMsg(c, "MfaTokenInvalid"))
 		return
@@ -167,12 +158,7 @@ func (ct *Login) MfaLogin(c *gin.Context) {
 		response.Fail(c, 101, response.TranslateMsg(c, "MfaTokenInvalid"))
 		return
 	}
-	// 检查账户是否过期
-	if service.AllService.UserService.IsUserExpired(u) {
-		response.Fail(c, 101, response.TranslateMsg(c, "AccountExpired"))
-		return
-	}
-	// 校验动态码或恢复码
+	// Verify dynamic code or recovery code
 	ok := false
 	if f.RecoveryCode != "" {
 		ok = service.AllService.UserService.VerifyMfaRecovery(u, f.RecoveryCode)
@@ -184,13 +170,13 @@ func (ct *Login) MfaLogin(c *gin.Context) {
 		return
 	}
 	ut := service.AllService.UserService.Login(u, &model.LoginLog{
-		UserId:   u.Id,
-		Client:   model.LoginLogClientWebAdmin,
-		Uuid:     "", //must be empty
-		Ip:       c.ClientIP(),
+		UserId:    u.Id,
+		Client:    model.LoginLogClientWebAdmin,
+		Uuid:      "", //must be empty
+		Ip:        c.ClientIP(),
 		UserAgent: c.GetHeader("User-Agent"),
-		Type:     model.LoginLogTypeAccount,
-		Platform: f.Platform,
+		Type:      model.LoginLogTypeAccount,
+		Platform:  f.Platform,
 	})
 	responseLoginSuccess(c, u, ut)
 }
@@ -225,20 +211,20 @@ func (ct *Login) Captcha(c *gin.Context) {
 	})
 }
 
-// Logout 登出
-// @Tags 登录
-// @Summary 登出
-// @Description 登出
+// Logout
+// @Tags login
+// @Summary Sign out
+// @Description log out
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /admin/logout [post]
 func (ct *Login) Logout(c *gin.Context) {
-	// 从 HttpOnly Cookie 读取 token（前端 JS 无法读取/删除该 Cookie，只能由后端清除）
+	// Read token from HttpOnly Cookie (front-end JS cannot read/delete this cookie and can only be cleared by the back-end)
 	token, err := c.Cookie("access_token")
 	if err == nil && token != "" {
-		// 传空 fingerprint 跳过来源校验，确保即使来源变化也能正常登出并清理记录
+		// Passing an empty fingerprint skips source verification, ensuring that you can log out normally and clear records even if the source changes.
 		u, _ := service.AllService.UserService.InfoByAccessToken(token, "")
 		if u != nil && u.Id != 0 {
 			service.AllService.UserService.Logout(u, token)
@@ -249,9 +235,9 @@ func (ct *Login) Logout(c *gin.Context) {
 }
 
 // LoginOptions
-// @Tags 登录
-// @Summary 登录选项
-// @Description 登录选项
+// @Tags login
+// @Summary Login options
+// @Description Login options
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} []string
@@ -309,7 +295,7 @@ func (ct *Login) OidcAuth(c *gin.Context) {
 		Uuid:     f.Uuid,
 		Verifier: verifier,
 		Nonce:    nonce,
-	}, 3600) // webauto 流程：TTL 设为 1 小时避免管理员登录超时
+	}, 3600) // webauto process: Set TTL to 1 hour to avoid administrator login timeout
 
 	response.Success(c, gin.H{
 		"code": state,
@@ -335,9 +321,9 @@ func (ct *Login) OidcAuthQuery(c *gin.Context) {
 	responseLoginSuccess(c, u, ut)
 }
 
-// setAuthCookie 设置会话 Cookie：HttpOnly 防止 XSS 读取，SameSite=Lax 缓解 CSRF。
-// Secure 仅在 HTTPS（直接 TLS 或反向代理 X-Forwarded-Proto: https）时启用，
-// 避免本地明文 HTTP 开发环境下浏览器拒收 Cookie。
+// setAuthCookie sets the session cookie: HttpOnly to prevent XSS reading, SameSite=Lax to mitigate CSRF.
+// Secure is only enabled with HTTPS (direct TLS or reverse proxy X-Forwarded-Proto: https),
+// Prevent browsers from rejecting cookies in local plaintext HTTP development environments.
 func setAuthCookie(c *gin.Context, token string, maxAge int) {
 	secure := false
 	if c.Request.TLS != nil {
@@ -349,7 +335,7 @@ func setAuthCookie(c *gin.Context, token string, maxAge int) {
 	c.SetCookie("access_token", token, maxAge, "/", "", secure, true)
 }
 
-// clearAuthCookie 清除会话 Cookie（登出或登录失效时调用）。
+// clearAuthCookie clears session cookies (called when logout or login fails).
 func clearAuthCookie(c *gin.Context) {
 	secure := false
 	if c.Request.TLS != nil {
@@ -362,11 +348,11 @@ func clearAuthCookie(c *gin.Context) {
 }
 
 func responseLoginSuccess(c *gin.Context, u *model.User, ut *model.UserToken) {
-	// token 仅通过 HttpOnly Cookie 下发，不再返回给前端 JS，从根本上消除 XSS 盗取风险。
+	// The token is only issued through HttpOnly Cookie and is no longer returned to the front-end JS, fundamentally eliminating the risk of XSS theft.
 	setAuthCookie(c, ut.Token, int(ut.ExpiredAt-time.Now().Unix()))
 	lp := &adResp.LoginPayload{}
 	lp.FromUser(u)
-	lp.Token = "" // 不再向前端暴露 token
+	lp.Token = "" // No longer expose tokens to the front end
 	lp.RouteNames = service.AllService.UserService.RouteNames(u)
 	response.Success(c, lp)
 }

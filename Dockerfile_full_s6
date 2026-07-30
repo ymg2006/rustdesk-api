@@ -17,6 +17,9 @@ COPY --from=server /usr/bin/rustdesk-utils /usr/bin/rustdesk-utils
 COPY --from=server /command /command
 
 RUN \
+  chmod 0755 /app/apimain && \
+  mkdir -p /app/runtime && \
+  chmod 0755 /app/runtime && \
   mkdir -p /etc/s6-overlay/s6-rc.d/api && \
   echo -e "key-secret\nhbbs" > /etc/s6-overlay/s6-rc.d/api/dependencies && \
   echo "longrun" > /etc/s6-overlay/s6-rc.d/api/type && \

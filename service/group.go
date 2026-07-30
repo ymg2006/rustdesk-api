@@ -3,21 +3,21 @@ package service
 import (
 	"errors"
 
-	"github.com/lejianwen/rustdesk-api/v2/model"
+	"github.com/ymg2006/rustdesk-api/v2/model"
 	"gorm.io/gorm"
 )
 
 type GroupService struct {
 }
 
-// InfoById 根据用户id取用户信息
+// InfoById gets user information based on user id
 func (us *GroupService) InfoById(id uint) *model.Group {
 	u := &model.Group{}
 	DB.Where("id = ?", id).First(u)
 	return u
 }
 
-// All 取所有部门（用于构建树）
+// All takes all departments (used to build the tree)
 func (us *GroupService) All() []*model.Group {
 	var groups []*model.Group
 	DB.Order("id asc").Find(&groups)
@@ -38,7 +38,7 @@ func (us *GroupService) List(page, pageSize uint, where func(tx *gorm.DB)) (res 
 	return
 }
 
-// Tree 构建部门树
+// Tree Build department tree
 func (us *GroupService) Tree() []*model.GroupTree {
 	all := us.All()
 	return us.buildTree(all, 0)
@@ -59,21 +59,21 @@ func (us *GroupService) buildTree(groups []*model.Group, parentId uint) []*model
 	return nodes
 }
 
-// HasChildren 是否有子部门
+// Does HasChildren have sub-departments?
 func (us *GroupService) HasChildren(id uint) bool {
 	var c int64
 	DB.Model(&model.Group{}).Where("parent_id = ?", id).Count(&c)
 	return c > 0
 }
 
-// UserCountByGroupId 部门下用户数
+// UserCountByGroupId Number of users under the department
 func (us *GroupService) UserCountByGroupId(groupId uint) int64 {
 	var c int64
 	DB.Model(&model.User{}).Where("group_id = ?", groupId).Count(&c)
 	return c
 }
 
-// DescendantIds 取某部门的所有子孙部门ID（不含自身）
+// DescendantIds gets all the descendant department IDs of a department (excluding itself)
 func (us *GroupService) DescendantIds(parentId uint) []uint {
 	ids := make([]uint, 0)
 	all := us.All()
@@ -90,7 +90,7 @@ func (us *GroupService) DescendantIds(parentId uint) []uint {
 	return ids
 }
 
-// IsDescendantOf 判断 maybeChild 是否为 ancestor（含自身）的后代，用于防止部门层级成环
+// IsDescendantOf determines whether maybeChild is a descendant of ancestor (including itself), used to prevent department level loops
 func (us *GroupService) IsDescendantOf(maybeChild, ancestor uint) bool {
 	all := us.All()
 	cur := maybeChild
@@ -115,13 +115,13 @@ func (us *GroupService) IsDescendantOf(maybeChild, ancestor uint) bool {
 	}
 }
 
-// Create 创建
+// Create
 func (us *GroupService) Create(u *model.Group) error {
 	res := DB.Create(u).Error
 	return res
 }
 
-// Delete 删除（存在子部门或成员时禁止，避免产生孤儿数据）
+// Delete Delete (disabled when there are sub-departments or members to avoid the generation of orphan data)
 func (us *GroupService) Delete(u *model.Group) error {
 	if us.HasChildren(u.Id) {
 		return errors.New("DeptHasChildren")
@@ -132,12 +132,12 @@ func (us *GroupService) Delete(u *model.Group) error {
 	return DB.Delete(u).Error
 }
 
-// Update 更新
+// Update update
 func (us *GroupService) Update(u *model.Group) error {
 	return DB.Model(u).Updates(u).Error
 }
 
-// DeviceGroupInfoById 根据用户id取用户信息
+// DeviceGroupInfoById gets user information based on user id
 func (us *GroupService) DeviceGroupInfoById(id uint) *model.DeviceGroup {
 	u := &model.DeviceGroup{}
 	DB.Where("id = ?", id).First(u)

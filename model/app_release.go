@@ -1,6 +1,6 @@
 package model
 
-// AppRelease 应用版本发布管理
+// AppRelease application version release management
 type AppRelease struct {
 	IdModel
 	Version     string `json:"version" gorm:"type:varchar(32);default:'';not null;"`
@@ -12,7 +12,7 @@ type AppRelease struct {
 	TimeModel
 }
 
-// 版本发布表名
+// Version release table name
 func (AppRelease) TableName() string {
 	return "app_releases"
 }

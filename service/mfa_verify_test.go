@@ -4,16 +4,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lejianwen/rustdesk-api/v2/config"
-	"github.com/lejianwen/rustdesk-api/v2/model"
 	"github.com/pquerna/otp/totp"
 	"github.com/sirupsen/logrus"
+	"github.com/ymg2006/rustdesk-api/v2/config"
+	"github.com/ymg2006/rustdesk-api/v2/model"
 )
 
-// TestVerifyMfaCode_Regression 回归测试：覆盖 MFA 动态码校验的正确/错误码、空密钥守卫，
-// 以及时钟偏移（Skew 加固）场景。无需数据库，纯内存校验。
+// TestVerifyMfaCode_Regression regression test: covering the correct/error code and empty key guard of MFA dynamic code verification,
+// and clock skew (Skew hardening) scenarios. No database required, pure memory verification.
 func TestVerifyMfaCode_Regression(t *testing.T) {
-	// 避免修复后 Logger.Warnf 在测试中 nil panic
+	// Fixed Logger.Warnf to avoid nil panic in tests
 	Logger = logrus.New()
 
 	us := &UserService{}
@@ -24,48 +24,48 @@ func TestVerifyMfaCode_Regression(t *testing.T) {
 
 	u := &model.User{Username: "alice", MfaEnabled: true, MfaSecret: key.Secret()}
 
-	// 1) 正确动态码应通过
+	// 1) Correct dynamic code should pass
 	code, err := totp.GenerateCode(u.MfaSecret, time.Now())
 	if err != nil {
 		t.Fatalf("GenerateCode: %v", err)
 	}
 	if !us.VerifyMfaCode(u, code) {
-		t.Fatalf("正确动态码 %q 应校验通过", code)
+		t.Fatalf("Correct dynamic code%qshould be verified and passed", code)
 	}
 
-	// 2) 错误动态码应被拒绝
+	// 2) Wrong dynamic codes should be rejected
 	if us.VerifyMfaCode(u, "000000") {
-		t.Fatalf("错误动态码不应通过")
+		t.Fatalf("Error dynamic code should not pass")
 	}
 
-	// 3) 空密钥应被守卫拒绝（并打告警），不会静默误判
+	// 3) Empty keys should be rejected by the guard (and issue an alarm), and there will be no silent misjudgment
 	empty := &model.User{MfaEnabled: true, MfaSecret: ""}
 	if us.VerifyMfaCode(empty, code) {
-		t.Fatalf("空密钥不应通过校验")
+		t.Fatalf("Empty keys should not pass validation")
 	}
 
-	// 4) 时钟偏移 60s（超出默认 Skew=1 的 ±30s）场景下，加固后的 Skew=3（±90s）应可通过
+	// 4) In the scenario where the clock offset is 60s (±30s beyond the default Skew=1), the hardened Skew=3 (±90s) should be able to pass
 	skewedCode, err := totp.GenerateCode(u.MfaSecret, time.Now().Add(-60*time.Second))
 	if err != nil {
 		t.Fatalf("GenerateCode(skewed): %v", err)
 	}
-	// 旧行为（标准 totp.Validate, Skew=1）在此偏移下必然失败 —— 复现原 Bug 场景
+	// The old behavior (standard totp.Validate, Skew=1) must fail at this offset - reproducing the original bug scenario
 	if totp.Validate(skewedCode, u.MfaSecret) {
-		t.Fatalf("预期旧逻辑在 60s 偏移下失败，实际却通过（与根因不符）")
+		t.Fatalf("The old logic was expected to fail at 60s offset, but actually passed (inconsistent with the root cause)")
 	}
-	// 新行为（VerifyMfaCode, Skew=3）在此偏移下应通过 —— 验证加固生效
+	// The new behavior (VerifyMfaCode, Skew=3) should pass under this offset - verify hardening takes effect
 	if !us.VerifyMfaCode(u, skewedCode) {
-		t.Fatalf("加固后 VerifyMfaCode 在 60s 偏移下应能通过")
+		t.Fatalf("After reinforcement, VerifyMfaCode should be able to pass under 60s offset.")
 	}
 }
 
-// TestVerifyMfaCode_ConfigurableSkew 验证 mfa_totp_skew 配置生效：
-// 运维可通过 config.yaml 的 mfa_totp_skew 调整 TOTP 时钟容差（Skew=N → 容忍 ±30s×N），
-// 无需重新编译。本测试同时覆盖“放大容差接受更大偏移”与“默认容差拒绝过大偏移”两种情形。
+// TestVerifyMfaCode_ConfigurableSkew verifies that mfa_totp_skew configuration takes effect:
+// Operation and maintenance can adjust the TOTP clock tolerance through mfa_totp_skew in config.yaml (Skew=N → tolerance ±30s×N),
+// No need to recompile. This test covers both the "enlarged tolerance to accept larger excursions" and the "default tolerance to reject excessive excursions" situations.
 func TestVerifyMfaCode_ConfigurableSkew(t *testing.T) {
-	// 避免 Logger.Warnf 在测试中 nil panic
+	// Avoid Logger.Warnf nil panic in tests
 	Logger = logrus.New()
-	defer func() { Config = nil }() // 还原全局，避免污染其他测试
+	defer func() { Config = nil }() // Restore the overall situation to avoid contaminating other tests
 
 	us := &UserService{}
 	key, err := totp.Generate(totp.GenerateOpts{Issuer: "RustDesk", AccountName: "alice"})
@@ -74,27 +74,27 @@ func TestVerifyMfaCode_ConfigurableSkew(t *testing.T) {
 	}
 	u := &model.User{Username: "alice", MfaEnabled: true, MfaSecret: key.Secret()}
 
-	const offset = 150 * time.Second // 150s 偏移：仅 Skew>=5（±150s）才能容忍
+	const offset = 150 * time.Second // 150s offset: Only Skew>=5 (±150s) can be tolerated
 
-	// 1) 配置较大容差 Skew=6（±180s）：150s 偏移应通过
+	// 1) Configure a larger tolerance Skew=6 (±180s): the 150s offset should pass
 	Config = &config.Config{MfaTotpSkew: 6}
 	code, err := totp.GenerateCode(u.MfaSecret, time.Now().Add(-offset))
 	if err != nil {
 		t.Fatalf("GenerateCode(skewed): %v", err)
 	}
 	if !us.VerifyMfaCode(u, code) {
-		t.Fatalf("配置 Skew=6 时，%v 偏移的验证码应能通过", offset)
+		t.Fatalf("When configuring Skew=6, the verification code with%voffset should pass", offset)
 	}
 
-	// 2) 对照：回退为默认 Skew=3（±90s）< 150s：应被拒绝
+	// 2) Control: fall back to default Skew=3 (±90s) < 150s: should be rejected
 	Config = &config.Config{MfaTotpSkew: 3}
 	if us.VerifyMfaCode(u, code) {
-		t.Fatalf("默认 Skew=3 时，%v 偏移的验证码不应通过", offset)
+		t.Fatalf("When the default Skew=3, the verification code with%voffset should not pass", offset)
 	}
 
-	// 3) 边界：配置非法值（0 / 负数）应回退默认 Skew=3，150s 偏移仍被拒绝
+	// 3) Boundary: Configuring illegal values ​​(0 / negative numbers) should fall back to the default Skew=3, and the 150s offset is still rejected
 	Config = &config.Config{MfaTotpSkew: 0}
 	if us.VerifyMfaCode(u, code) {
-		t.Fatalf("非法配置 Skew=0 应回退默认(3)，%v 偏移的验证码不应通过", offset)
+		t.Fatalf("Illegal configuration Skew=0 should fall back to default (3), and the verification code with%voffset should not pass", offset)
 	}
 }

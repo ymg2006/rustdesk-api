@@ -2,26 +2,26 @@ package my
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/global"
-	"github.com/lejianwen/rustdesk-api/v2/http/request/admin"
-	"github.com/lejianwen/rustdesk-api/v2/http/response"
-	"github.com/lejianwen/rustdesk-api/v2/model"
-	"github.com/lejianwen/rustdesk-api/v2/service"
+	"github.com/ymg2006/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/http/request/admin"
+	"github.com/ymg2006/rustdesk-api/v2/http/response"
+	"github.com/ymg2006/rustdesk-api/v2/model"
+	"github.com/ymg2006/rustdesk-api/v2/service"
 	"gorm.io/gorm"
 )
 
 type LoginLog struct {
 }
 
-// List 列表
-// @Tags 我的登录日志
-// @Summary 登录日志列表
-// @Description 登录日志列表
+// List list
+// @Tags My login log
+// @Summary Login log list
+// @Description Login log list
 // @Accept  json
 // @Produce  json
-// @Param page query int false "页码"
-// @Param page_size query int false "页大小"
-// @Param user_id query int false "用户ID"
+// @Param page query int false "page number"
+// @Param page_size query int false "page size"
+// @Param user_id query int false "User ID"
 // @Success 200 {object} response.Response{data=model.LoginLogList}
 // @Failure 500 {object} response.Response
 // @Router /admin/my/login_log/list [get]
@@ -73,13 +73,13 @@ func (ct *LoginLog) List(c *gin.Context) {
 	response.Success(c, gin.H{"list": enriched, "total": res.Total})
 }
 
-// Delete 删除
-// @Tags 我的登录日志
-// @Summary 登录日志删除
-// @Description 登录日志删除
+// Delete Delete
+// @Tags My login log
+// @Summary Login log deletion
+// @Description Login log deletion
 // @Accept  json
 // @Produce  json
-// @Param body body model.LoginLog true "登录日志信息"
+// @Param body body model.LoginLog true "Login log information"
 // @Success 200 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /admin/my/login_log/delete [post]
@@ -114,13 +114,13 @@ func (ct *LoginLog) Delete(c *gin.Context) {
 	response.Fail(c, 101, err.Error())
 }
 
-// BatchDelete 删除
-// @Tags 我的登录日志
-// @Summary 登录日志批量删除
-// @Description 登录日志批量删除
+// BatchDelete Delete
+// @Tags My login log
+// @Summary Login log batch deletion
+// @Description Batch deletion of login logs
 // @Accept  json
 // @Produce  json
-// @Param body body admin.LoginLogIds true "登录日志"
+// @Param body body admin.LoginLogIds true "Login log"
 // @Success 200 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /admin/my/login_log/batchDelete [post]

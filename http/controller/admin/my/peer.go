@@ -2,10 +2,10 @@ package my
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/http/request/admin"
-	"github.com/lejianwen/rustdesk-api/v2/http/response"
-	"github.com/lejianwen/rustdesk-api/v2/model"
-	"github.com/lejianwen/rustdesk-api/v2/service"
+	"github.com/ymg2006/rustdesk-api/v2/http/request/admin"
+	"github.com/ymg2006/rustdesk-api/v2/http/response"
+	"github.com/ymg2006/rustdesk-api/v2/model"
+	"github.com/ymg2006/rustdesk-api/v2/service"
 	"gorm.io/gorm"
 	"time"
 )
@@ -13,18 +13,18 @@ import (
 type Peer struct {
 }
 
-// List 列表
-// @Tags 我的设备
-// @Summary 设备列表
-// @Description 设备列表
+// List list
+// @Tags my device
+// @Summary Device List
+// @Description device list
 // @Accept  json
 // @Produce  json
-// @Param page query int false "页码"
-// @Param page_size query int false "页大小"
-// @Param time_ago query int false "时间"
+// @Param page query int false "page number"
+// @Param page_size query int false "page size"
+// @Param time_ago query int false "time"
 // @Param id query string false "ID"
-// @Param hostname query string false "主机名"
-// @Param uuids query string false "uuids 用逗号分隔"
+// @Param hostname query string false "hostname"
+// @Param uuids query string false "uuids separated by commas"
 // @Success 200 {object} response.Response{data=model.PeerList}
 // @Failure 500 {object} response.Response
 // @Router /admin/my/peer/list [get]
@@ -45,13 +45,13 @@ func (ct *Peer) List(c *gin.Context) {
 	var sharedIds []string
 	if u.GroupId > 0 {
 		service.DB.Raw(`
-			SELECT ab.id FROM address_book ab
+			SELECT ab.id FROM address_books ab
 			INNER JOIN address_book_collection_rules r ON ab.collection_id = r.collection_id
 			WHERE (r.type = 1 AND r.to_id = ?) OR (r.type = 2 AND r.to_id = ?)
 		`, u.Id, u.GroupId).Pluck("id", &sharedIds)
 	} else {
 		service.DB.Raw(`
-			SELECT ab.id FROM address_book ab
+			SELECT ab.id FROM address_books ab
 			INNER JOIN address_book_collection_rules r ON ab.collection_id = r.collection_id
 			WHERE r.type = 1 AND r.to_id = ?
 		`, u.Id).Pluck("id", &sharedIds)

@@ -10,23 +10,23 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/global"
-	"github.com/lejianwen/rustdesk-api/v2/http/response"
+	"github.com/ymg2006/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/http/response"
 )
 
-// ServiceRestart 重启后端服务进程，仅管理员可用
-// 重启策略（按优先级自动探测）：
-//  1. 环境变量 RUSTDESK_API_RESTART_CMD 指定了自定义命令（空格分隔），直接执行；
-//  2. systemd 环境（/run/systemd/system 存在或 INVOCATION_ID 已设置）：执行 systemctl restart <服务名>，
-//     服务名取自 RUSTDESK_API_SYSTEMD_SERVICE，默认 rustdesk-api.service；
-//  3. s6 环境（/run/s6-rc/servicedirs/api 存在）：执行 s6-svc -r <服务目录>；
-//  4. 兜底：无守护进程时，自我重新执行当前二进制文件。
+// ServiceRestart restarts the backend service process, only available to administrators
+// Restart strategy (automatic detection by priority):
+//  1. The environment variable RUSTDESK_API_RESTART_CMD specifies custom commands (separated by spaces), which can be executed directly;
+//  2. systemd environment (/run/systemd/systemexists or INVOCATION_ID is set): execute systemctl restart <service name>,
+//     The service name is taken from RUSTDESK_API_SYSTEMD_SERVICE, default rustdesk-api.service;
+//  3. s6 environment (/run/s6-rc/servicedirs/apiexists): execute s6-svc -r <service directory>;
+//  4. Back to the bottom: When there is no daemon process, the current binary file will be re-executed by itself.
 //
-// 由于重启会中断当前进程，接口先返回成功，再延迟 1 秒后执行重启动作。
+// Since restarting will interrupt the current process, the interface will first return success and then perform the restart action after a delay of 1 second.
 //
 // @Tags ADMIN
-// @Summary 重启后端服务
-// @Description 重启 api-server 进程，使修改后的配置生效。仅管理员可用
+// @Summary Restart the backend service
+// @Description Restart the api-server process to make the modified configuration take effect. Only available to administrators
 // @Produce json
 // @Success 200 {object} response.Response
 // @Router /admin/config/restart [post]
@@ -39,9 +39,9 @@ func (co *Config) ServiceRestart(c *gin.Context) {
 	response.Success(c, nil)
 }
 
-// doRestart 执行实际的重启逻辑
+// doRestart performs the actual restart logic
 func doRestart() {
-	// 1. 自定义重启命令
+	// 1. Customize restart command
 	if cmdStr := os.Getenv("RUSTDESK_API_RESTART_CMD"); cmdStr != "" {
 		fields := strings.Fields(cmdStr)
 		if len(fields) > 0 {
@@ -56,7 +56,7 @@ func doRestart() {
 		if svc == "" {
 			svc = "rustdesk-api.service"
 		}
-		// 优先 systemctl，失败回退 service 命令
+		// Give priority to systemctl, and fall back to the service command if it fails.
 		if err := exec.Command("systemctl", "restart", svc).Run(); err == nil {
 			return
 		}
@@ -70,11 +70,11 @@ func doRestart() {
 		return
 	}
 
-	// 4. 兜底：自我重新执行
+	// 4. Back to the bottom: Self-re-execution
 	_ = selfExecRestart()
 }
 
-// isSystemd 判断当前进程是否运行在 systemd 管理下
+// isSystemd determines whether the current process is running under systemd management
 func isSystemd() bool {
 	if _, err := os.Stat("/run/systemd/system"); err == nil {
 		return true
@@ -85,7 +85,7 @@ func isSystemd() bool {
 	return false
 }
 
-// selfExecRestart 无守护进程时，重新执行当前二进制文件
+// selfExecRestart re-executes the current binary file when there is no daemon process
 func selfExecRestart() error {
 	exe, err := os.Executable()
 	if err != nil {
@@ -107,7 +107,7 @@ func selfExecRestart() error {
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	// 给子进程一点时间接管，再退出当前进程（无守护进程时不会有重复进程）
+	// Give the child process some time to take over and then exit the current process (there will be no duplicate processes when there is no daemon)
 	time.Sleep(500 * time.Millisecond)
 	global.Logger.Info("self restart, exiting old process")
 	os.Exit(0)

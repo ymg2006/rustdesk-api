@@ -2,16 +2,20 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
-	_ "github.com/lejianwen/rustdesk-api/v2/docs/admin"
-	"github.com/lejianwen/rustdesk-api/v2/global"
-	"github.com/lejianwen/rustdesk-api/v2/http/controller/admin"
-	"github.com/lejianwen/rustdesk-api/v2/http/controller/admin/my"
-	"github.com/lejianwen/rustdesk-api/v2/http/middleware"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	_ "github.com/ymg2006/rustdesk-api/v2/docs/admin"
+	"github.com/ymg2006/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/http/controller/admin"
+	"github.com/ymg2006/rustdesk-api/v2/http/controller/admin/my"
+	apic "github.com/ymg2006/rustdesk-api/v2/http/controller/api"
+	"github.com/ymg2006/rustdesk-api/v2/http/middleware"
 )
 
 func Init(g *gin.Engine) {
+
+	//swagger
+	//g.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	if global.Config.App.ShowSwagger == 1 {
 		g.GET("/admin/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.InstanceName("admin")))
 	}
@@ -36,6 +40,12 @@ func Init(g *gin.Engine) {
 	AddressBookCollectionRuleBind(adg)
 	UserTokenBind(adg)
 
+	//deprecated by ConfigBind
+	//rs := &admin.Rustdesk{}
+	//adg.GET("/server-config", rs.ServerConfig)
+	//adg.GET("/app-config", rs.AppConfig)
+	//deprecated end
+
 	ShareRecordBind(adg)
 	StrategyBind(adg)
 	VersionBind(adg)
@@ -47,21 +57,17 @@ func Init(g *gin.Engine) {
 	AlertChannelBind(adg)
 	AlertConfigBind(adg)
 	StationMessageBind(adg)
+	AnnouncementBind(adg)
 	RustdeskCmdBind(adg)
 	DeviceGroupBind(adg)
 	BackupBind(adg)
 	ProcessMonitorBind(adg)
-	InvitationBind(adg)
-}
-
-func InvitationBind(adg *gin.RouterGroup) {
-	cont := &admin.Invitation{}
-	rg := adg.Group("/invitation").Use(middleware.AdminPrivilege())
-	rg.GET("/list", cont.List)
-	rg.POST("/create", cont.Create)
-	rg.POST("/batchCreate", cont.BatchCreate)
-	rg.POST("/delete", cont.Delete)
-	rg.GET("/info", cont.Info)
+	SubscribeBind(adg)
+	InviteCodeBind(adg)
+	OrderBind(adg)
+	SubscriptionBind(adg)
+	// Serve static files.
+	//g.StaticFS("/upload", http.Dir(global.Config.Gin.ResourcesPath+"/upload"))
 }
 
 func DashboardBind(adg *gin.RouterGroup) {
@@ -88,10 +94,12 @@ func AlertConfigBind(adg *gin.RouterGroup) {
 	rg.POST("/create", cont.Create)
 	rg.POST("/update", cont.Update)
 	rg.POST("/delete", cont.Delete)
+	// alert targets
 	target := &admin.AlertTargetCtl{}
 	rg.GET("/targets", target.List)
 	rg.POST("/targets/create", target.Create)
 	rg.POST("/targets/delete", target.Delete)
+	// available collections/peers for selection
 	rg.GET("/available_collections", target.AvailableCollections)
 	rg.GET("/available_peers", target.AvailablePeers)
 }
@@ -102,15 +110,27 @@ func StationMessageBind(adg *gin.RouterGroup) {
 	rg.GET("/list", cont.List)
 	rg.GET("/unread_count", cont.UnreadCount)
 	rg.POST("/mark_read", cont.MarkRead)
+	// Send messages: all logged-in users may send.
 	rg.POST("/send", cont.Send)
+	// Broadcast and cleanup require admin privileges.
 	rg.POST("/broadcast", middleware.AdminPrivilege(), cont.Broadcast)
 	rg.POST("/cleanup", middleware.AdminPrivilege(), cont.Cleanup)
+}
+
+func AnnouncementBind(adg *gin.RouterGroup) {
+	cont := &admin.Announcement{}
+	rg := adg.Group("/announcement").Use(middleware.AdminPrivilege())
+	rg.GET("/list", cont.List)
+	rg.GET("/info", cont.Info)
+	rg.POST("/create", cont.Create)
+	rg.POST("/update", cont.Update)
+	rg.POST("/delete", cont.Delete)
 }
 
 func ServerStatusBind(adg *gin.RouterGroup) {
 	cont := &admin.ServerStatus{}
 	rg := adg.Group("/server_status").Use(middleware.AdminPrivilege())
-	rg.GET("/", cont.Status)
+	rg.GET("", cont.Status)
 	rg.GET("/list", cont.List)
 	rg.POST("/create", cont.Create)
 	rg.POST("/update", cont.Update)
@@ -143,7 +163,9 @@ func UserBind(rg *gin.RouterGroup) {
 		aR.GET("/current", cont.Current)
 		aR.POST("/changeCurPwd", cont.ChangeCurPwd)
 		aR.POST("/myOauth", cont.MyOauth)
+		//aR.GET("/myPeer", cont.MyPeer)
 		aR.POST("/groupUsers", cont.GroupUsers)
+		// MFA (TOTP) self-service for the current logged-in user's own MFA management.
 		aR.POST("/mfa/setup", cont.MfaSetup)
 		aR.POST("/mfa/enable", cont.MfaEnable)
 		aR.POST("/mfa/disable", cont.MfaDisable)
@@ -158,6 +180,7 @@ func UserBind(rg *gin.RouterGroup) {
 		aRP.POST("/update", cont.Update)
 		aRP.POST("/delete", cont.Delete)
 		aRP.POST("/changePwd", cont.UpdatePassword)
+		// Admin forced MFA reset for account recovery.
 		aRP.POST("/mfa/reset", cont.MfaReset)
 	}
 }
@@ -207,11 +230,13 @@ func AddressBookBind(rg *gin.RouterGroup) {
 
 		arp := aR.Use(middleware.AdminPrivilege())
 		arp.GET("/list", cont.List)
+		//arp.GET("/detail/:id", cont.Detail)
 		arp.POST("/create", cont.Create)
 		arp.POST("/update", cont.Update)
 		arp.POST("/delete", cont.Delete)
 		arp.POST("/batchCreate", cont.BatchCreate)
 		arp.POST("/batchCreateFromPeers", cont.BatchCreateFromPeers)
+
 	}
 }
 func PeerBind(rg *gin.RouterGroup) {
@@ -247,7 +272,9 @@ func OauthBind(rg *gin.RouterGroup) {
 		arp.POST("/create", cont.Create)
 		arp.POST("/update", cont.Update)
 		arp.POST("/delete", cont.Delete)
+
 	}
+
 }
 func LoginLogBind(rg *gin.RouterGroup) {
 	cont := &admin.LoginLog{}
@@ -256,133 +283,245 @@ func LoginLogBind(rg *gin.RouterGroup) {
 	aR.POST("/delete", cont.Delete)
 	aR.POST("/batchDelete", cont.BatchDelete)
 }
-
 func AuditBind(rg *gin.RouterGroup) {
-	cont := &admin.AuditLog{}
-	aR := rg.Group("/audit").Use(middleware.AdminPrivilege())
-	aR.GET("/list", cont.List)
+	cont := &admin.Audit{}
+	aR := rg.Group("/audit_conn").Use(middleware.AdminPrivilege())
+	aR.GET("/list", cont.ConnList)
+	aR.POST("/delete", cont.ConnDelete)
+	aR.POST("/batchDelete", cont.BatchConnDelete)
+	afR := rg.Group("/audit_file").Use(middleware.AdminPrivilege())
+	afR.GET("/list", cont.FileList)
+	afR.POST("/delete", cont.FileDelete)
+	afR.POST("/batchDelete", cont.BatchFileDelete)
 }
-
 func AddressBookCollectionBind(rg *gin.RouterGroup) {
 	aR := rg.Group("/address_book_collection").Use(middleware.AdminPrivilege())
 	{
 		cont := &admin.AddressBookCollection{}
 		aR.GET("/list", cont.List)
+		aR.GET("/detail/:id", cont.Detail)
 		aR.POST("/create", cont.Create)
 		aR.POST("/update", cont.Update)
 		aR.POST("/delete", cont.Delete)
 	}
-}
 
+}
 func AddressBookCollectionRuleBind(rg *gin.RouterGroup) {
 	aR := rg.Group("/address_book_collection_rule").Use(middleware.AdminPrivilege())
 	{
 		cont := &admin.AddressBookCollectionRule{}
 		aR.GET("/list", cont.List)
+		aR.GET("/detail/:id", cont.Detail)
 		aR.POST("/create", cont.Create)
 		aR.POST("/update", cont.Update)
 		aR.POST("/delete", cont.Delete)
 	}
 }
-
 func UserTokenBind(rg *gin.RouterGroup) {
+	aR := rg.Group("/user_token").Use(middleware.AdminPrivilege())
 	cont := &admin.UserToken{}
-	rg2 := rg.Group("/user_tokens").Use(middleware.AdminPrivilege())
-	rg2.GET("/list", cont.List)
-	rg2.POST("/batchDelete", cont.BatchDelete)
+	aR.GET("/list", cont.List)
+	aR.POST("/delete", cont.Delete)
+	aR.POST("/batchDelete", cont.BatchDelete)
+	aR.POST("/deleteExpired", cont.DeleteExpired)
+}
+func ConfigBind(rg *gin.RouterGroup) {
+	aR := rg.Group("/config")
+	rs := &admin.Config{}
+	// Note: /config/admin must be registered before BackendUserAuth() intentionally.
+	// The login page needs to read the backend title for branding before the user is logged in.
+	// This endpoint only returns title / hello; hello comes from a server-configured file and is not user input.
+	// It does not expose database passwords, OSS keys, JWT keys, or other sensitive settings, so it remains public.
+	// If this is locked down later, also verify the login page title-loading flow to avoid breaking login.
+	aR.GET("/admin", rs.AdminConfig)
+
+	aR.Use(middleware.BackendUserAuth())
+	aR.GET("/server", rs.ServerConfig)
+	aR.GET("/app", rs.AppConfig)
+
+	// Configuration file read/write: admins only.
+	aRf := aR.Group("/file").Use(middleware.AdminPrivilege())
+	aRf.GET("/get", rs.ConfigFileGet)
+	aRf.POST("/update", rs.ConfigFileUpdate)
+
+	// Service restart: admins only.
+	aR.POST("/restart", middleware.AdminPrivilege(), rs.ServiceRestart)
 }
 
-func ShareRecordBind(adg *gin.RouterGroup) {
-	cont := &admin.ShareRecord{}
-	rg := adg.Group("/share_record").Use(middleware.AdminPrivilege())
-	rg.GET("/list", cont.List)
-	rg.POST("/delete", cont.Delete)
-}
-
-func StrategyBind(adg *gin.RouterGroup) {
-	cont := &admin.Strategy{}
-	rg := adg.Group("/strategy").Use(middleware.AdminPrivilege())
-	rg.GET("/list", cont.List)
-	rg.POST("/create", cont.Create)
-	rg.POST("/update", cont.Update)
-	rg.POST("/delete", cont.Delete)
-}
-
-func VersionBind(adg *gin.RouterGroup) {
-	cont := &admin.VersionRelease{}
-	rg := adg.Group("/version_release").Use(middleware.AdminPrivilege())
-	rg.GET("/list", cont.List)
-	rg.POST("/create", cont.Create)
-	rg.POST("/update", cont.Update)
-	rg.POST("/delete", cont.Delete)
-	rg.GET("/detail", cont.Detail)
-}
-
-func ClientDownloadBind(adg *gin.RouterGroup) {
-	cont := &admin.ClientDownload{}
-	rg := adg.Group("/client_download")
-	rg.GET("/config", cont.Config)
-	rg.GET("/list", cont.List)
-	rg.GET("/versions", cont.Versions)
-}
-
-func FileBind(adg *gin.RouterGroup) {
-	cont := &admin.File{}
-	rg := adg.Group("/file")
-	rg.GET("/download", cont.Download)
-	rg.POST("/upload", cont.Upload)
-}
-
-func ConfigBind(adg *gin.RouterGroup) {
-	cont := &admin.Config{}
-	rg := adg.Group("/config")
-	rg.GET("/get", cont.Get)
-	rg.POST("/set", cont.Set)
+func FileBind(rg *gin.RouterGroup) {
+	aR := rg.Group("/file")
+	{
+		cont := &admin.File{}
+		aR.POST("/notify", cont.Notify)
+		aR.OPTIONS("/oss_token", nil)
+		aR.OPTIONS("/upload", nil)
+		aR.GET("/oss_token", cont.OssToken)
+		aR.POST("/upload", cont.Upload)
+	}
 }
 
 func MyBind(rg *gin.RouterGroup) {
-	aR := rg.Group("/my")
 	{
-		cont := &my.My{}
-		aR.GET("/info", cont.Info)
-		aR.POST("/update", cont.Update)
-		aR.POST("/changePwd", cont.ChangePwd)
-		aR.POST("/bindMfa", cont.BindMfa)
-		aR.POST("/unbindMfa", cont.UnbindMfa)
-		aR.POST("/changeAvatar", cont.ChangeAvatar)
-		aR.POST("/changeLang", cont.ChangeLang)
-		aR.GET("/menuItems", cont.MenuItems)
-		aR.POST("/bindOidc", cont.BindOidc)
-		// 分享记录
-		aR.GET("/shareRecords", (&my.MyShare{}).List)
-		aR.POST("/createShareRecord", (&my.MyShare{}).Create)
-		aR.POST("/deleteShareRecord", (&my.MyShare{}).Delete)
+		cont := &my.ShareRecord{}
+		rg.GET("/my/share_record/list", cont.List)
+		rg.POST("/my/share_record/delete", cont.Delete)
+		rg.POST("/my/share_record/batchDelete", cont.BatchDelete)
 	}
-	aR2 := rg.Group("/my")
+
 	{
-		cont := &my.MyPeer{}
-		aR2.GET("/peers", cont.List)
+		cont := &my.AddressBook{}
+		rg.GET("/my/address_book/list", cont.List)
+		rg.POST("/my/address_book/create", cont.Create)
+		rg.POST("/my/address_book/update", cont.Update)
+		rg.POST("/my/address_book/delete", cont.Delete)
+		rg.POST("/my/address_book/batchCreateFromPeers", cont.BatchCreateFromPeers)
+		rg.POST("/my/address_book/batchUpdateTags", cont.BatchUpdateTags)
 	}
-	aR3 := rg.Group("/my")
+
 	{
-		cont := &my.MyLoginLog{}
-		aR3.GET("/loginLogs", cont.List)
+		cont := &my.Tag{}
+		rg.GET("/my/tag/list", cont.List)
+		rg.POST("/my/tag/create", cont.Create)
+		rg.POST("/my/tag/update", cont.Update)
+		rg.POST("/my/tag/delete", cont.Delete)
 	}
+
+	{
+		cont := &my.AddressBookCollection{}
+		rg.GET("/my/address_book_collection/list", cont.List)
+		rg.POST("/my/address_book_collection/create", cont.Create)
+		rg.POST("/my/address_book_collection/update", cont.Update)
+		rg.POST("/my/address_book_collection/delete", cont.Delete)
+	}
+
+	{
+		cont := &my.AddressBookCollectionRule{}
+		rg.GET("/my/address_book_collection_rule/list", cont.List)
+		rg.POST("/my/address_book_collection_rule/create", cont.Create)
+		rg.POST("/my/address_book_collection_rule/update", cont.Update)
+		rg.POST("/my/address_book_collection_rule/delete", cont.Delete)
+	}
+	{
+		cont := &my.Peer{}
+		rg.GET("/my/peer/list", cont.List)
+
+	}
+
+	{
+		cont := &my.LoginLog{}
+		rg.GET("/my/login_log/list", cont.List)
+		rg.POST("/my/login_log/delete", cont.Delete)
+		rg.POST("/my/login_log/batchDelete", cont.BatchDelete)
+	}
+	{
+		cont := &my.Audit{}
+		rg.GET("/my/audit_conn/list", cont.List)
+	}
+}
+
+func ShareRecordBind(rg *gin.RouterGroup) {
+	aR := rg.Group("/share_record").Use(middleware.AdminPrivilege())
+	{
+		cont := &admin.ShareRecord{}
+		aR.GET("/list", cont.List)
+		aR.POST("/delete", cont.Delete)
+		aR.POST("/batchDelete", cont.BatchDelete)
+	}
+
+}
+
+func StrategyBind(rg *gin.RouterGroup) {
+	sR := rg.Group("/strategy").Use(middleware.AdminPrivilege())
+	{
+		cont := &admin.Strategy{}
+		sR.GET("/list", cont.List)
+		sR.POST("/create", cont.Create)
+		sR.POST("/update", cont.Update)
+		sR.POST("/delete", cont.Delete)
+	}
+}
+
+func VersionBind(rg *gin.RouterGroup) {
+	vR := rg.Group("/version").Use(middleware.AdminPrivilege())
+	{
+		cont := &admin.Version{}
+		vR.GET("/list", cont.List)
+		vR.POST("/create", cont.Create)
+		vR.POST("/update", cont.Update)
+		vR.POST("/delete", cont.Delete)
+		vR.POST("/setEnable", cont.SetEnable)
+	}
+}
+
+func ClientDownloadBind(rg *gin.RouterGroup) {
+	vR := rg.Group("/client_download").Use(middleware.AdminPrivilege())
+	{
+		cont := &admin.ClientDownload{}
+		vR.GET("/list", cont.List)
+		vR.POST("/create", cont.Create)
+		vR.POST("/update", cont.Update)
+		vR.POST("/delete", cont.Delete)
+		vR.POST("/setEnable", cont.SetEnable)
+	}
+}
+
+func BackupBind(adg *gin.RouterGroup) {
+	rg := adg.Group("/backup").Use(middleware.AdminPrivilege())
+	cont := &admin.BackupCtl{}
+	rg.GET("/config", cont.Config)
+	rg.GET("/database", cont.Database)
 }
 
 func ProcessMonitorBind(adg *gin.RouterGroup) {
 	cont := &admin.ProcessMonitor{}
 	rg := adg.Group("/process_monitor").Use(middleware.AdminPrivilege())
-	rg.GET("/list", cont.List)
-	rg.POST("/update", cont.Update)
+	rg.GET("/rules", cont.RuleList)
+	rg.POST("/rule/create", cont.RuleCreate)
+	rg.POST("/rule/batch_create", cont.RuleBatchCreate)
+	rg.POST("/rule/update", cont.RuleUpdate)
+	rg.POST("/rule/delete", cont.RuleDelete)
+	rg.GET("/status", cont.StatusList)
+	rg.GET("/peer_sources", cont.PeerSources)
 }
 
-func BackupBind(adg *gin.RouterGroup) {
-	cont := &admin.Backup{}
-	rg := adg.Group("/backup").Use(middleware.AdminPrivilege())
+// SubscribeBind registers user subscription APIs. Login is required, with authentication and subscription exemptions.
+func SubscribeBind(adg *gin.RouterGroup) {
+	cont := &apic.SubscribeController{}
+	rg := adg.Group("/subscribe")
+	// These routes are registered after BackendUserAuth(), so the user is authenticated.
+	rg.GET("/plans", cont.Plans)
+	rg.POST("/create-order", cont.CreateOrder)
+	rg.GET("/order/:out_trade_no", cont.QueryOrder)
+	rg.POST("/claim", cont.Claim)
+	rg.POST("/redeem", cont.Redeem)
+	rg.GET("/mine", cont.Mine)
+}
+
+// InviteCodeBind registers admin invite-code management routes. Admins only.
+func InviteCodeBind(adg *gin.RouterGroup) {
+	cont := &admin.AdminInviteCodeController{}
+	rg := adg.Group("/invite-codes").Use(middleware.AdminPrivilege())
+	rg.GET("", cont.List)
+	rg.POST("", cont.Create)
+	rg.POST("/:id/revoke", cont.Revoke)
+	rg.DELETE("/:id/delete", cont.Delete)
+	rg.GET("/export", cont.Export)
+}
+
+// OrderBind registers admin order management routes. Admins only.
+func OrderBind(adg *gin.RouterGroup) {
+	cont := &admin.OrderCtl{}
+	rg := adg.Group("/orders").Use(middleware.AdminPrivilege())
 	rg.GET("/list", cont.List)
-	rg.POST("/create", cont.Create)
-	rg.POST("/do", cont.DoBackup)
-	rg.POST("/restore", cont.Restore)
-	rg.POST("/delete", cont.Delete)
+	rg.GET("/detail/:id", cont.Detail)
+	rg.POST("/:id/confirm", cont.Confirm)
+	rg.POST("/:id/close", cont.Close)
+}
+
+// SubscriptionBind registers admin subscription management routes. Admins only.
+func SubscriptionBind(adg *gin.RouterGroup) {
+	cont := &admin.SubscriptionCtl{}
+	rg := adg.Group("/subscriptions").Use(middleware.AdminPrivilege())
+	rg.GET("/list", cont.List)
+	rg.POST("/extend", cont.Extend)
 }

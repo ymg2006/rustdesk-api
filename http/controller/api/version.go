@@ -2,20 +2,20 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/http/response"
-	"github.com/lejianwen/rustdesk-api/v2/service"
+	"github.com/ymg2006/rustdesk-api/v2/http/response"
+	"github.com/ymg2006/rustdesk-api/v2/service"
 )
 
 type Version struct {
 }
 
-// LatestVersion 获取最新版本
-// @Tags 版本检测
-// @Summary 获取最新版本信息
-// @Description 客户端调用该接口检查是否有新版本
+// LatestVersion Get the latest version
+// @Tags version detection
+// @Summary Get the latest version information
+// @Description The client calls this interface to check whether there is a new version
 // @Accept  json
 // @Produce  json
-// @Param platform query string false "平台: windows/macos/linux/ubuntu/android"
+// @Param platform query string false "Platform:windows/macos/linux/ubuntu/android"
 // @Success 200 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /api/version/latest [get]

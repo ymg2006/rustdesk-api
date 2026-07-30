@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lejianwen/rustdesk-api/v2/model"
+	"github.com/ymg2006/rustdesk-api/v2/model"
 )
 
 type ProcessMonitorService struct{}
 
-// applyOverrides 把单设备覆盖配置应用到父规则副本
+// applyOverrides applies single device override configuration to parent rule copy
 func applyOverrides(r model.ProcessMonitorRule, ov map[string]interface{}) model.ProcessMonitorRule {
 	if ov == nil {
 		return r
@@ -47,8 +47,8 @@ func applyOverrides(r model.ProcessMonitorRule, ov map[string]interface{}) model
 	return r
 }
 
-// peerMatchesSource 判断某设备当前是否属于集合规则（device_group / ab_tags）的覆盖范围。
-// 成员关系动态取自设备当前所属设备组 / 地址簿标签，避免设备从设备组移除后监控快照未更新而继续报警。
+// peerMatchesSource determines whether a device is currently covered by the set rules (device_group / ab_tags).
+// Membership dynamics are taken from the device group/address book label to which the device currently belongs, to prevent the monitoring snapshot from being updated and continuing to alarm after the device is removed from the device group.
 func (s *ProcessMonitorService) peerMatchesSource(peer *model.Peer, ab *model.AddressBook, rule *model.ProcessMonitorRule) bool {
 	switch rule.SourceType {
 	case "device_group":
@@ -79,7 +79,7 @@ func (s *ProcessMonitorService) peerMatchesSource(peer *model.Peer, ab *model.Ad
 	return false
 }
 
-// splitTagSet 将逗号分隔的标签串解析为集合
+// splitTagSet parses a comma-separated string of tags into a set
 func splitTagSet(s string) map[string]struct{} {
 	set := make(map[string]struct{})
 	for _, t := range strings.Split(s, ",") {
@@ -91,7 +91,7 @@ func splitTagSet(s string) map[string]struct{} {
 	return set
 }
 
-// loadOverride 读取某设备在某集合规则上的覆盖配置（不存在则返回 nil）
+// loadOverride reads the override configuration of a certain device on a certain set of rules (returns nil if it does not exist)
 func (s *ProcessMonitorService) loadOverride(ruleId uint, peerId string) map[string]interface{} {
 	var rp model.ProcessMonitorRulePeer
 	DB.Where("rule_id = ? AND peer_id = ?", ruleId, peerId).First(&rp)
@@ -105,10 +105,10 @@ func (s *ProcessMonitorService) loadOverride(ruleId uint, peerId string) map[str
 	return ov
 }
 
-// findMatchingRule 查找匹配 peer+type+target 的规则（单设备优先，其次集合规则）
-// 集合规则（device_group / ab_tags）的成员关系动态解析：设备从设备组/标签移除后不再匹配，停止报警。
+// findMatchingRule finds rules matching peer+type+target (single device first, followed by collection of rules)
+// Dynamic analysis of the membership of collection rules (device_group/ab_tags): after the device is removed from the device group/tag, it no longer matches and the alarm stops.
 func (s *ProcessMonitorService) findMatchingRule(peerId, typ, target string) *model.ProcessMonitorRule {
-	// 1. 单设备规则
+	// 1. Single device rules
 	var single model.ProcessMonitorRule
 	DB.Where("peer_id = ? AND type = ? AND target = ? AND enabled = ?", peerId, typ, target, 1).
 		Where("source_type = ? OR source_type = ?", "peers", "").
@@ -117,7 +117,7 @@ func (s *ProcessMonitorService) findMatchingRule(peerId, typ, target string) *mo
 		return &single
 	}
 
-	// 2. 集合规则：动态解析成员关系（不再依赖 ProcessMonitorRulePeer 快照）
+	// 2. Collection rules: dynamically resolve membership relationships (no longer relies on ProcessMonitorRulePeer snapshot)
 	peer := &model.Peer{}
 	DB.Where("id = ?", peerId).First(peer)
 	if peer.RowId == 0 {
@@ -136,7 +136,7 @@ func (s *ProcessMonitorService) findMatchingRule(peerId, typ, target string) *mo
 		}
 		rr := applyOverrides(*r, s.loadOverride(r.RowId, peerId))
 		if rr.Enabled != 1 {
-			// 该设备被单独排除（覆盖配置关闭）
+			// The device is excluded individually (override configuration is turned off)
 			continue
 		}
 		return &rr
@@ -144,8 +144,8 @@ func (s *ProcessMonitorService) findMatchingRule(peerId, typ, target string) *mo
 	return &model.ProcessMonitorRule{}
 }
 
-// RulesByPeer 返回某设备启用的监控规则（含单设备规则与集合规则展开后的结果）
-// 集合规则成员关系动态解析，设备从设备组/标签移除后不再下发对应监控配置。
+// RulesByPeer returns the monitoring rules enabled for a device (including the expanded results of single device rules and collective rules)
+// Collection rule membership is dynamically resolved, and the corresponding monitoring configuration will no longer be delivered after the device is removed from the device group/label.
 func (s *ProcessMonitorService) RulesByPeer(peerId string) []model.ProcessMonitorRule {
 	var rules []model.ProcessMonitorRule
 	DB.Where("peer_id = ? AND enabled = ? AND (source_type = ? OR source_type = ?)", peerId, 1, "peers", "").
@@ -176,7 +176,7 @@ func (s *ProcessMonitorService) RulesByPeer(peerId string) []model.ProcessMonito
 	return rules
 }
 
-// UpsertAndCheck 写入上报状态，并按规则判定是否触发告警
+// UpsertAndCheck writes the reporting status and determines whether to trigger the alarm according to the rules
 func (s *ProcessMonitorService) UpsertAndCheck(peerId, name, typ, target string, running bool, now int64) {
 	runningInt := 0
 	if running {
@@ -205,7 +205,7 @@ func (s *ProcessMonitorService) UpsertAndCheck(peerId, name, typ, target string,
 	}
 	DB.Save(st)
 
-	// 触发告警：down 持续超过阈值且尚未发送过告警
+	// Triggering an alarm: down continues to exceed the threshold and no alarm has been sent yet
 	if runningInt == 0 && rule.RowId > 0 && rule.AlertConfigId > 0 && rule.Enabled == 1 {
 		if now-st.DownSince >= int64(rule.DownThreshold) && st.Alerted == 0 {
 			s.fireAlert(rule, st)
@@ -214,19 +214,19 @@ func (s *ProcessMonitorService) UpsertAndCheck(peerId, name, typ, target string,
 	}
 }
 
-// fireAlert 复用既有告警通道发送通知
+// fireAlert reuses existing alarm channels to send notifications
 func (s *ProcessMonitorService) fireAlert(rule *model.ProcessMonitorRule, st *model.ProcessMonitorStatus) {
 	cfg := &model.AlertConfig{}
 	DB.Where("row_id = ?", rule.AlertConfigId).First(cfg)
 	if cfg.RowId == 0 {
 		return
 	}
-	typName := "进程"
+	typName := "process"
 	if rule.Type == "port" {
-		typName = "端口"
+		typName = "port"
 	}
-	title := fmt.Sprintf("进程监控告警：%s", rule.Name)
-	content := fmt.Sprintf("设备：%s\n监控项：%s\n类型：%s\n目标：%s\n状态：未运行\n起始时间：%s",
+	title := fmt.Sprintf("Process monitoring alarm:%s", rule.Name)
+	content := fmt.Sprintf("Device: %s\nMonitor: %s\nType: %s\nTarget: %s\nStatus: not running\nStart time: %s",
 		st.PeerId, rule.Name, typName, rule.Target,
 		time.Unix(st.DownSince, 0).Format("2006-01-02 15:04:05"))
 	AllService.NotifyService.SendByConfig(cfg, title, content)

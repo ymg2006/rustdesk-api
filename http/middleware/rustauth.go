@@ -2,26 +2,27 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/global"
-	"github.com/lejianwen/rustdesk-api/v2/service"
+	"github.com/ymg2006/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/http/response"
+	"github.com/ymg2006/rustdesk-api/v2/service"
 )
 
 func RustAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		//获取HTTP_AUTHORIZATION
+		// Read the Authorization header.
 		token := c.GetHeader("Authorization")
 		if token == "" || len(token) <= 7 {
 			c.JSON(401, gin.H{
-				"error": "Unauthorized",
+				"error": response.TranslateMsg(c, "Unauthorized"),
 			})
 			c.Abort()
 			return
 		}
-		//提取token，格式是Bearer {token}
+		// Extract the token in the format Bearer {token}.
 		token = token[7:]
 
-		// 优先 JWT 验证（若配置了 JWT key）
-		// JWT 验证通过后直接拿到 uid，可跳过数据库 token 查找
+		// Prefer JWT verification when a JWT key is configured.
+		// A valid JWT directly provides uid and skips database token lookup.
 		if len(global.Jwt.Key) > 0 {
 			uid, err := service.AllService.UserService.VerifyJWT(token)
 			if err == nil && uid > 0 {
@@ -33,20 +34,20 @@ func RustAuth() gin.HandlerFunc {
 					return
 				}
 			}
-			// JWT 验证失败降级到数据库 token 查找（兼容老客户端）
+			// Fall back to database token lookup when JWT verification fails for compatibility with old clients.
 		}
 
 		user, ut := service.AllService.UserService.InfoByAccessToken(token, "")
 		if user.Id == 0 {
 			c.JSON(401, gin.H{
-				"error": "Unauthorized",
+				"error": response.TranslateMsg(c, "Unauthorized"),
 			})
 			c.Abort()
 			return
 		}
 		if !service.AllService.UserService.CheckUserEnable(user) || service.AllService.UserService.IsUserExpired(user) {
 			c.JSON(401, gin.H{
-				"error": "Unauthorized",
+				"error": response.TranslateMsg(c, "Unauthorized"),
 			})
 			c.Abort()
 			return

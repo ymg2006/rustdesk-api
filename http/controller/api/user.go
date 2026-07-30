@@ -2,18 +2,18 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	apiResp "github.com/lejianwen/rustdesk-api/v2/http/response/api"
-	"github.com/lejianwen/rustdesk-api/v2/service"
+	apiResp "github.com/ymg2006/rustdesk-api/v2/http/response/api"
+	"github.com/ymg2006/rustdesk-api/v2/service"
 	"net/http"
 )
 
 type User struct {
 }
 
-// currentUser 当前用户
-// @Tags 用户
-// @Summary 用户信息
-// @Description 用户信息
+// currentUser current user
+// @Tags user
+// @Summary User information
+// @Description User information
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} api.UserPayload
@@ -26,10 +26,10 @@ type User struct {
 //	c.JSON(http.StatusOK, up)
 //}
 
-// Info 用户信息
-// @Tags 用户
-// @Summary 用户信息
-// @Description 用户信息
+// Info User information
+// @Tags user
+// @Summary User information
+// @Description User information
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} api.UserPayload

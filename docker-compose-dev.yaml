@@ -5,9 +5,9 @@ services:
       dockerfile: Dockerfile.dev
       args:
         COUNTRY: CN
-        FRONTEND_GIT_REPO: https://github.com/lejianwen/rustdesk-api-web.git
+        FRONTEND_GIT_REPO: https://github.com/ymg2006/rustdesk-api-web.git
         FRONTEND_GIT_BRANCH: master
-    # image: lejianwen/rustdesk-api
+    # image: ymg2006/rustdesk-api
     container_name: rustdesk-api
     environment:
       - TZ=Asia/Shanghai
@@ -18,7 +18,7 @@ services:
     ports:
       - 21114:21114
     volumes:
-      - ./data/rustdesk/api:/app/data #将数据库挂载出来方便备份
+      - ./data/rustdesk/api:/app/data # Mount the database directory to simplify backups.
       - ./conf:/app/conf # config
-      # - ./resources:/app/resources # 静态资源
+      # - ./resources:/app/resources# Static resources
     restart: unless-stopped

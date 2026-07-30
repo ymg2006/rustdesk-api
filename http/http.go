@@ -1,13 +1,14 @@
 package http
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/global"
-	"github.com/lejianwen/rustdesk-api/v2/http/middleware"
-	"github.com/lejianwen/rustdesk-api/v2/http/router"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
+	"github.com/ymg2006/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/http/middleware"
+	"github.com/ymg2006/rustdesk-api/v2/http/router"
 )
 
 func ApiInit() {
@@ -25,7 +26,7 @@ func ApiInit() {
 	}
 
 	if global.Config.Gin.Mode == gin.ReleaseMode {
-		//修改gin Recovery日志 输出为logger的输出点
+		// Redirect gin Recovery logs to the configured logger output.
 		if global.Logger != nil {
 			gin.DefaultErrorWriter = global.Logger.WriterLevel(logrus.ErrorLevel)
 		}

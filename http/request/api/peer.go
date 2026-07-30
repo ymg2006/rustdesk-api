@@ -1,6 +1,6 @@
 package api
 
-import "github.com/lejianwen/rustdesk-api/v2/model"
+import "github.com/ymg2006/rustdesk-api/v2/model"
 
 type AddressBookFormData struct {
 	Tags      []string             `json:"tags"`
@@ -36,7 +36,7 @@ func (pf *PeerForm) ToPeer() *model.Peer {
 	}
 }
 
-// PersonalAddressBookForm 个人地址簿表单
+// PersonalAddressBookForm is the personal address book form.
 type PersonalAddressBookForm struct {
 	model.AddressBook
 	ForceAlwaysRelay string `json:"forceAlwaysRelay"`
@@ -73,8 +73,8 @@ type TagColorForm struct {
 }
 
 type PeerInfoInHeartbeat struct {
-	Id   string `json:"id"`
-	Uuid string `json:"uuid"`
-	Ver  int    `json:"ver"`
-	Conns []int `json:"conns"`
+	Id    string `json:"id"`
+	Uuid  string `json:"uuid"`
+	Ver   int    `json:"ver"`
+	Conns []int  `json:"conns"`
 }

@@ -1,23 +1,24 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
-	requstform "github.com/lejianwen/rustdesk-api/v2/http/request/api"
-	"github.com/lejianwen/rustdesk-api/v2/http/response"
-	"github.com/lejianwen/rustdesk-api/v2/model"
-	"github.com/lejianwen/rustdesk-api/v2/service"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	requstform "github.com/ymg2006/rustdesk-api/v2/http/request/api"
+	"github.com/ymg2006/rustdesk-api/v2/http/response"
+	"github.com/ymg2006/rustdesk-api/v2/model"
+	"github.com/ymg2006/rustdesk-api/v2/service"
 )
 
 type Index struct {
 }
 
-// Index 首页
-// @Tags 首页
-// @Summary 首页
-// @Description 首页
+// Index Home Page
+// @Tags Home Page
+// @Summary Home Page
+// @Description Home
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} response.Response
@@ -30,10 +31,10 @@ func (i *Index) Index(c *gin.Context) {
 	)
 }
 
-// Heartbeat 心跳
-// @Tags 首页
-// @Summary 心跳
-// @Description 心跳
+// Heartbeat
+// @Tags Home Page
+// @Summary heartbeat
+// @Description heartbeat
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} nil
@@ -55,29 +56,29 @@ func (i *Index) Heartbeat(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{})
 		return
 	}
-	//如果在40s以内则不更新
+	//If it is within 40s, it will not be updated.
 	if time.Now().Unix()-peer.LastOnlineTime >= 30 {
 		upp := &model.Peer{RowId: peer.RowId, LastOnlineTime: time.Now().Unix(), LastOnlineIp: c.ClientIP()}
 		service.AllService.PeerService.Update(upp)
 	}
 
-	// 记录活跃连接的心跳（客户端上报的 conns 列表）
+	// Record the heartbeat of active connections (conns list reported by the client)
 	if len(info.Conns) > 0 {
 		service.AllService.AuditService.RecordConnHeartbeat(info.Id, info.Conns)
 	}
 
 	resp := gin.H{}
 
-	// 策略下发：按用户指定优先级查找
-	// 绑定优先级: user(最高) > group > tag > global(兜底)
-	// 同类型的多个策略按数值优先级取最高
+	// Policy delivery: search based on user-specified priority
+	// Binding priority: user (highest) > group > tag > global (bottom)
+	// Multiple policies of the same type have the highest numerical priority.
 	var foundStrategy *model.Strategy
 
-	// 查询所有启用的策略，按数值优先级降序
+	// Query all enabled policies, in descending order of numerical priority
 	var allEnabled []model.Strategy
 	service.DB.Where("status = 1").Order("priority desc").Find(&allEnabled)
 
-	// 收集该设备关联的标签ID（通过地址簿，存的是标签名）
+	// Collect the tag ID associated with the device (through the address book, the tag name is stored)
 	var peerTagIds []uint
 	var abs []model.AddressBook
 	service.DB.Where("id = ?", peer.Id).Find(&abs)
@@ -91,8 +92,8 @@ func (i *Index) Heartbeat(c *gin.Context) {
 		}
 	}
 
-	// 按绑定类型优先级查找：user → group → tag → global
-	// 每种类型取数值优先级最高的第一个
+	// Search by binding type priority: user → group → tag → global
+	// For each type, take the first one with the highest numerical priority.
 	bindOrder := []string{"user", "group", "tag", "global"}
 	for _, bindType := range bindOrder {
 		if foundStrategy != nil {
@@ -105,17 +106,17 @@ func (i *Index) Heartbeat(c *gin.Context) {
 			match := false
 			switch bindType {
 			case "user":
-				// 用户绑定：设备所属用户匹配（不含别人分享的策略）
+				// User binding: matches the user to whom the device belongs (excluding policies shared by others)
 				if peer.UserId > 0 && s.BindId == peer.UserId {
 					match = true
 				}
 			case "group":
-				// 设备分组绑定
+				// Device group binding
 				if peer.GroupId > 0 && s.BindId == peer.GroupId {
 					match = true
 				}
 			case "tag":
-				// 标签绑定：设备的地址簿中有该标签
+				// Label binding: The label is in the device’s address book
 				for _, tid := range peerTagIds {
 					if tid == s.BindId {
 						match = true
@@ -123,7 +124,7 @@ func (i *Index) Heartbeat(c *gin.Context) {
 					}
 				}
 			case "global":
-				// 全局绑定：适用于所有设备
+				// Global binding: works on all devices
 				match = true
 			}
 			if match {
@@ -134,7 +135,7 @@ func (i *Index) Heartbeat(c *gin.Context) {
 	}
 
 	if foundStrategy != nil {
-		// 将 ConfigItems (key=value 每行) 解析为 map
+		// Parse ConfigItems (key=value per row) into a map
 		configMap := make(map[string]string)
 		for _, line := range strings.Split(foundStrategy.ConfigItems, "\n") {
 			line = strings.TrimSpace(line)
@@ -159,17 +160,17 @@ func (i *Index) Heartbeat(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// Version 版本
-// @Tags 首页
-// @Summary 版本
-// @Description 版本
+// Version version
+// @Tags Home Page
+// @Summary version
+// @Description version
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /version [get]
 func (i *Index) Version(c *gin.Context) {
-	//读取resources/version文件
+	//Read resources/version file
 	v := service.AllService.AppService.GetAppVersion()
 	response.Success(
 		c,
@@ -177,4 +178,18 @@ func (i *Index) Version(c *gin.Context) {
 	)
 }
 
-
+// ServerInfo backend version information
+// @Tags Home Page
+// @Summary backend version information
+// @Description returns the backend version number
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /server/info [get]
+func (i *Index) ServerInfo(c *gin.Context) {
+	v := service.AllService.AppService.GetAppVersion()
+	response.Success(c, gin.H{
+		"backend_version": v,
+	})
+}

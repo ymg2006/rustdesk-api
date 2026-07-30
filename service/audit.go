@@ -2,8 +2,8 @@ package service
 
 import (
 	"fmt"
-	"github.com/lejianwen/rustdesk-api/v2/global"
-	"github.com/lejianwen/rustdesk-api/v2/model"
+	"github.com/ymg2006/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/model"
 	"gorm.io/gorm"
 	"strconv"
 	"strings"
@@ -28,7 +28,7 @@ func (as *AuditService) AuditConnList(page, pageSize uint, where func(tx *gorm.D
 	return
 }
 
-// Create 创建
+// Create
 func (as *AuditService) CreateAuditConn(u *model.AuditConn) error {
 	res := DB.Create(u).Error
 	return res
@@ -37,7 +37,7 @@ func (as *AuditService) DeleteAuditConn(u *model.AuditConn) error {
 	return DB.Delete(u).Error
 }
 
-// Update 更新
+// Update update
 func (as *AuditService) UpdateAuditConn(u *model.AuditConn) error {
 	return DB.Model(u).Updates(u).Error
 }
@@ -49,12 +49,12 @@ func (as *AuditService) InfoByPeerIdAndConnId(peerId string, connId int64) (res 
 	return
 }
 
-// UpsertByPeerIdAndConnId 按 (peer_id, conn_id) 更新已存在记录的非零字段；不存在则创建。
-// 客户端连接建立时先发 new（不带 peer 信息），授权成功后再发一条不带 action 的更新补全
-// from_peer/from_name/session_id/type。两条为独立异步 HTTP，存在到达顺序竞态：
-// 若更新先于 new 到达，旧逻辑因查不到记录而丢弃更新，导致最终记录缺失来源名称。
-// 改为 upsert 后，无论到达顺序，两条请求都会命中同一条记录并合并各自字段（Updates 只写非零字段，
-// 不会用空值覆盖已有信息），彻底消除竞态丢失。
+// UpsertByPeerIdAndConnId updates the non-zero field of an existing record by (peer_id, conn_id); creates it if it does not exist.
+// When the client connection is established, new is sent first (without peer information), and then an update completion without action is sent after the authorization is successful.
+// from_peer/from_name/session_id/type. The two are independent asynchronous HTTPs, and there is a race in arrival order:
+// If the update arrives before new, the old logic discards the update because the record cannot be found, resulting in the final record missing the source name.
+// After changing to upsert, regardless of the order of arrival, the two requests will hit the same record and merge their respective fields (Updates only writes non-zero fields,
+// Existing information will not be overwritten with null values), completely eliminating race loss.
 func (as *AuditService) UpsertByPeerIdAndConnId(u *model.AuditConn) error {
 	ex := as.InfoByPeerIdAndConnId(u.PeerId, u.ConnId)
 	if ex.Id != 0 {
@@ -100,7 +100,7 @@ func (as *AuditService) DeleteAuditFile(u *model.AuditFile) error {
 	return DB.Delete(u).Error
 }
 
-// Update 更新
+// Update update
 func (as *AuditService) UpdateAuditFile(u *model.AuditFile) error {
 	return DB.Model(u).Updates(u).Error
 }
@@ -109,13 +109,13 @@ func (as *AuditService) BatchDeleteAuditConn(ids []uint) error {
 	return DB.Where("id in (?)", ids).Delete(&model.AuditConn{}).Error
 }
 
-// StartStaleConnCloseSweep 后台定时清理“进行中”的孤儿连接审计记录。
-// 触发关闭的条件（满足其一即可）：
-//  1. 对端设备已离线超过 5 分钟（崩溃 / 网络中断 / 进程被杀死等场景）；
-//  2. 记录创建已超过 24 小时（兜底，覆盖控制端升级替换、未收到 close 事件的场景）。
+// StartStaleConnCloseSweep periodically cleans up "in-progress" orphan connection audit records in the background.
+// Conditions that trigger shutdown (just one of them is met):
+//  1. The peer device has been offline for more than 5 minutes (crashes/network interruptions/processes are killed, etc.);
+//  2. It has been more than 24 hours since the record was created (to cover the scenario where the controller is upgraded and replaced and the close event is not received).
 //
-// 避免旧客户端退出时未发送 close 审计，导致首页“最近连接记录”永久卡在“进行中”。
-// 该操作幂等，多实例部署也安全。
+// This prevents the old client from not sending a close audit when exiting, causing the "Recent Connection Record" on the home page to be permanently stuck in "In Progress".
+// This operation is idempotent and is safe for multi-instance deployment.
 func (as *AuditService) StartStaleConnCloseSweep() {
 	ticker := time.NewTicker(2 * time.Minute)
 	defer ticker.Stop()
@@ -127,8 +127,8 @@ func (as *AuditService) StartStaleConnCloseSweep() {
 
 func (as *AuditService) closeStaleConns() {
 	now := time.Now()
-	offlineThreshold := now.Unix() - 300      // 对端离线超过 5 分钟
-	maxAgeThreshold := now.Add(-24 * time.Hour) // 记录超过 24 小时
+	offlineThreshold := now.Unix() - 300        // The peer is offline for more than 5 minutes
+	maxAgeThreshold := now.Add(-24 * time.Hour) // Logging for more than 24 hours
 	sub := DB.Model(&model.Peer{}).
 		Select("id").
 		Where("last_online_time <= ? OR last_online_time = 0", offlineThreshold)
@@ -145,13 +145,13 @@ func (as *AuditService) closeStaleConns() {
 	}
 }
 
-// ========== 连接心跳追踪 ==========
-// connHeartbeats 记录每个活跃连接的最近心跳时间。
+// ========== Connect Heartbeat Tracking ==========
+// connHeartbeats records the most recent heartbeat time for each active connection.
 // key = "peerId:connId", value = time.Time
 var connHeartbeats sync.Map
 
-// RecordConnHeartbeat 记录一批连接的心跳时间。
-// 在 Heartbeat 控制器中调用，传入客户端心跳上报的活跃连接列表。
+// RecordConnHeartbeat records the heartbeat time of a batch of connections.
+// Called in the Heartbeat controller, passing in the list of active connections reported by the client's heartbeat.
 func (as *AuditService) RecordConnHeartbeat(peerId string, connIds []int) {
 	now := time.Now()
 	for _, cid := range connIds {
@@ -159,10 +159,10 @@ func (as *AuditService) RecordConnHeartbeat(peerId string, connIds []int) {
 	}
 }
 
-// StartConnHeartbeatSweep 后台定时清理心跳超时的连接审计记录。
-// 如果某个活跃连接在 60 秒内没有心跳更新（客户端异常断开），则关闭审计记录。
-// 与 StartStaleConnCloseSweep 并存：前者更快（60s）、更精细（逐连接）；
-// 后者更保守（5min）兜底设备级离线。
+// StartConnHeartbeatSweep periodically clears the connection audit records of heartbeat timeouts in the background.
+// If there is no heartbeat update for an active connection within 60 seconds (the client disconnects abnormally), audit logging is turned off.
+// Coexisting with StartStaleConnCloseSweep: the former is faster (60s) and more granular (per connection);
+// The latter is more conservative (5 minutes) and takes device-level offline.
 func (as *AuditService) StartConnHeartbeatSweep() {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
@@ -175,7 +175,7 @@ func (as *AuditService) StartConnHeartbeatSweep() {
 func (as *AuditService) closeStaleConnsByHeartbeat() {
 	now := time.Now()
 	threshold := now.Add(-60 * time.Second)
-	var toClose []string // peerId:connId 格式
+	var toClose []string // peerId:connId format
 	connHeartbeats.Range(func(key, value interface{}) bool {
 		if lastBeat, ok := value.(time.Time); ok {
 			if lastBeat.Before(threshold) {
@@ -187,7 +187,7 @@ func (as *AuditService) closeStaleConnsByHeartbeat() {
 	if len(toClose) == 0 {
 		return
 	}
-	// 遍历要关闭的记录
+	// Traverse the records to be closed
 	var closedCount int64
 	for _, key := range toClose {
 		parts := strings.SplitN(key, ":", 2)
@@ -201,8 +201,8 @@ func (as *AuditService) closeStaleConnsByHeartbeat() {
 			connHeartbeats.Delete(key)
 			continue
 		}
-		// 同时检查 peer_id（被控端）和 from_peer（控制端）两个方向：
-		// 被控端断开心跳 → 关闭；控制端断开心跳即使被控端还活着，也应关闭。
+		// Check both directions of peer_id (controlled terminal) and from_peer (control terminal) at the same time:
+		// The controlled terminal disconnects the heartbeat → close; the controlled terminal disconnects the heartbeat and should be closed even if the controlled terminal is still alive.
 		res := DB.Model(&model.AuditConn{}).
 			Where("close_time = 0").
 			Where("(peer_id = ? AND conn_id = ?) OR (from_peer = ? AND conn_id = ?)", peerId, connId, peerId, connId).
@@ -221,10 +221,10 @@ func (as *AuditService) BatchDeleteAuditFile(ids []uint) error {
 	return DB.Where("id in (?)", ids).Delete(&model.AuditFile{}).Error
 }
 
-// CloseInProgressByFromPeerAndPeer 关闭同一用户(FromPeer)对同一对端(PeerId)仍“进行中”(close_time=0)的连接审计记录。
-// 用于解决异常断开（客户端未发送 close 审计）导致“最近连接记录”一直显示“进行中”的问题：
-// 当该用户再次向同一对端发起连接(new)时，把上一条仍在进行中的记录置为已关闭，状态即被重置。
-// 该操作幂等，多实例部署也安全。
+// CloseInProgressByFromPeerAndPeer closes the audit record of the connection of the same user (FromPeer) to the same peer (PeerId) that is still "in progress" (close_time=0).
+// Used to solve the problem of abnormal disconnection (the client did not send a close audit) causing the "Recent Connection Record" to always display "In Progress":
+// When the user initiates a connection (new) to the same peer again, the previous record that is still in progress is set to closed, and the status is reset.
+// This operation is idempotent and is safe for multi-instance deployment.
 func (as *AuditService) CloseInProgressByFromPeerAndPeer(fromPeer, peerId string) {
 	if fromPeer == "" || peerId == "" {
 		return

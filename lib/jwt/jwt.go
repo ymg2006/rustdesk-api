@@ -45,8 +45,8 @@ func (s *Jwt) GenerateToken(userId uint) string {
 
 func (s *Jwt) ParseToken(tokenString string) (uint, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
-		// SECURITY: 显式校验签名算法，防止算法混淆攻击（algorithm confusion）。
-		// 若不校验，攻击者可把 alg 改为 "none" 或用 RSA 公钥伪装成 HMAC 密钥来伪造令牌。
+		// SECURITY: Explicitly verify the signature algorithm to prevent algorithm confusion.
+		// If it is not verified, the attacker can change alg to "none" or use the RSA public key to disguise it as an HMAC key to forge the token.
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -61,13 +61,13 @@ func (s *Jwt) ParseToken(tokenString string) (uint, error) {
 	return 0, err
 }
 
-// MfaClaims 用于登录二次验证的临时令牌（短时效）
+// MfaClaims is a temporary token (short-lived) used for two-step login verification.
 type MfaClaims struct {
 	UserId uint `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
-// GenerateMfaToken 生成 MFA 临时令牌，有效期 5 分钟
+// GenerateMfaToken generates a temporary MFA token, valid for 5 minutes
 func (s *Jwt) GenerateMfaToken(userId uint) string {
 	if len(s.Key) == 0 {
 		return ""
@@ -85,10 +85,10 @@ func (s *Jwt) GenerateMfaToken(userId uint) string {
 	return token
 }
 
-// ParseMfaToken 解析 MFA 临时令牌
+// ParseMfaToken parses MFA temporary token
 func (s *Jwt) ParseMfaToken(tokenString string) (uint, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &MfaClaims{}, func(token *jwt.Token) (interface{}, error) {
-		// SECURITY: 同上，MFA 临时令牌同样需要校验签名算法，防止伪造。
+		// SECURITY: Same as above, the MFA temporary token also needs to verify the signature algorithm to prevent forgery.
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}

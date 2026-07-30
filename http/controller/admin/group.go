@@ -2,20 +2,20 @@ package admin
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/global"
-	"github.com/lejianwen/rustdesk-api/v2/http/request/admin"
-	"github.com/lejianwen/rustdesk-api/v2/http/response"
-	"github.com/lejianwen/rustdesk-api/v2/service"
+	"github.com/ymg2006/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/http/request/admin"
+	"github.com/ymg2006/rustdesk-api/v2/http/response"
+	"github.com/ymg2006/rustdesk-api/v2/service"
 	"strconv"
 )
 
 type Group struct {
 }
 
-// Detail 群组
-// @Tags 群组
-// @Summary 群组详情
-// @Description 群组详情
+// Detail group
+// @Tags group
+// @Summary Group details
+// @Description Group details
 // @Accept  json
 // @Produce  json
 // @Param id path int true "ID"
@@ -34,13 +34,13 @@ func (ct *Group) Detail(c *gin.Context) {
 	response.Fail(c, 101, response.TranslateMsg(c, "ItemNotFound"))
 }
 
-// Create 创建群组（部门）
-// @Tags 群组
-// @Summary 创建群组
-// @Description 创建群组
+// Create Create a group (department)
+// @Tags group
+// @Summary Create a group
+// @Description Create a group
 // @Accept  json
 // @Produce  json
-// @Param body body admin.GroupForm true "群组信息"
+// @Param body body admin.GroupForm true "Group information"
 // @Success 200 {object} response.Response{data=model.Group}
 // @Failure 500 {object} response.Response
 // @Router /admin/group/create [post]
@@ -72,14 +72,14 @@ func (ct *Group) Create(c *gin.Context) {
 	response.Success(c, nil)
 }
 
-// List 列表
-// @Tags 群组
-// @Summary 群组列表
-// @Description 群组列表
+// List list
+// @Tags group
+// @Summary Group List
+// @Description group list
 // @Accept  json
 // @Produce  json
-// @Param page query int false "页码"
-// @Param page_size query int false "页大小"
+// @Param page query int false "page number"
+// @Param page_size query int false "page size"
 // @Success 200 {object} response.Response{data=model.GroupList}
 // @Failure 500 {object} response.Response
 // @Router /admin/group/list [get]
@@ -94,13 +94,13 @@ func (ct *Group) List(c *gin.Context) {
 	response.Success(c, res)
 }
 
-// Update 编辑
-// @Tags 群组
-// @Summary 群组编辑
-// @Description 群组编辑
+// Update Edit
+// @Tags group
+// @Summary Group Editor
+// @Description Group Edit
 // @Accept  json
 // @Produce  json
-// @Param body body admin.GroupForm true "群组信息"
+// @Param body body admin.GroupForm true "Group information"
 // @Success 200 {object} response.Response{data=model.Group}
 // @Failure 500 {object} response.Response
 // @Router /admin/group/update [post]
@@ -121,7 +121,7 @@ func (ct *Group) Update(c *gin.Context) {
 		return
 	}
 	u := f.ToGroup()
-	// 防止将部门挂到自身或自己的子孙部门下，造成层级环
+	// Prevent departments from being linked to themselves or their descendants, causing a hierarchical environment.
 	if u.ParentId > 0 {
 		if u.ParentId == u.Id {
 			response.Fail(c, 101, response.TranslateMsg(c, "DeptCycleError"))
@@ -145,13 +145,13 @@ func (ct *Group) Update(c *gin.Context) {
 	response.Success(c, nil)
 }
 
-// Delete 删除
-// @Tags 群组
-// @Summary 群组删除
-// @Description 群组删除
+// Delete Delete
+// @Tags group
+// @Summary Group deletion
+// @Description group deletion
 // @Accept  json
 // @Produce  json
-// @Param body body admin.GroupForm true "群组信息"
+// @Param body body admin.GroupForm true "Group information"
 // @Success 200 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /admin/group/delete [post]
@@ -175,7 +175,7 @@ func (ct *Group) Delete(c *gin.Context) {
 			response.Success(c, nil)
 			return
 		}
-		// 部门下有子部门或成员时禁止删除
+		// Deletion is prohibited when there are sub-departments or members under the department.
 		if err.Error() == "DeptHasChildren" {
 			response.Fail(c, 101, response.TranslateMsg(c, "DeptHasChildren"))
 			return
@@ -190,10 +190,10 @@ func (ct *Group) Delete(c *gin.Context) {
 	response.Fail(c, 101, response.TranslateMsg(c, "ItemNotFound"))
 }
 
-// Tree 部门树（组织架构）
-// @Tags 群组
-// @Summary 部门树
-// @Description 返回嵌套的部门树，含成员数
+// Tree department tree (organizational structure)
+// @Tags group
+// @Summary department tree
+// @Description returns a nested department tree, including the number of members
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} response.Response{data=[]model.GroupTree}

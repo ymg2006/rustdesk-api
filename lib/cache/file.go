@@ -27,11 +27,11 @@ func (fc *FileCache) getLock(key string) *sync.Mutex {
 	return fc.locks[key]
 }
 
-// fileItem 是落盘文件的内部封装，把过期时间戳写进文件内容，
-// 避免依赖文件 mtime（未来时间脆弱，易被备份/同步/杀软重置导致缓存永远 miss）
+// fileItem is the internal encapsulation of the downloaded file, which writes the expiration timestamp into the file content.
+// Avoid relying on file mtime (future time is fragile and can easily be reset by backup/synchronization/antivirus software, causing the cache to be permanently missed)
 type fileItem struct {
-	Exp  int64  `json:"exp"`  // 过期 unix 时间戳；<=0 表示使用 MaxTimeOut
-	Data string `json:"data"` // EncodeValue 后的 JSON 字符串
+	Exp  int64  `json:"exp"`  // Expiration unix timestamp; <=0 means use MaxTimeOut
+	Data string `json:"data"` // JSON string after EncodeValue
 }
 
 func (c *FileCache) fileName(key string) string {
@@ -39,7 +39,7 @@ func (c *FileCache) fileName(key string) string {
 	return f
 }
 
-// getValue 读取落盘值；文件不存在/已过期/损坏时返回空串（过滤错误）
+// getValue reads the disk value; returns an empty string when the file does not exist/has expired/is damaged (filter error)
 func (c *FileCache) getValue(key string) string {
 	f := c.fileName(key)
 	lock := c.getLock(f)
@@ -52,7 +52,7 @@ func (c *FileCache) getValue(key string) string {
 	}
 	var item fileItem
 	if err := json.Unmarshal(data, &item); err != nil {
-		// 文件损坏（含旧格式），删除后视为未命中
+		// The file is damaged (including old format) and will be considered a miss after deletion.
 		os.Remove(f)
 		return ""
 	}
@@ -63,7 +63,7 @@ func (c *FileCache) getValue(key string) string {
 	return item.Data
 }
 
-// Get 读取缓存；未命中时 value 保持零值且不返回错误（与 SimpleCache 行为一致）
+// Get reads the cache; value remains zero on a miss and no error is returned (consistent with SimpleCache behavior)
 func (c *FileCache) Get(key string, value interface{}) error {
 	data := c.getValue(key)
 	if data == "" {
@@ -105,7 +105,7 @@ func (c *FileCache) SetDir(path string) {
 }
 
 func (c *FileCache) Gc() error {
-	// 过期清理由 Get 惰性删除完成；如需主动回收可在此遍历 Dir
+	// Expiration cleanup is completed by Get lazy deletion; if you need active recycling, you can traverse Dir here
 	return nil
 }
 

@@ -2,14 +2,14 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/global"
-	"github.com/lejianwen/rustdesk-api/v2/http/response"
-	"github.com/lejianwen/rustdesk-api/v2/service"
+	"github.com/ymg2006/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/http/response"
+	"github.com/ymg2006/rustdesk-api/v2/service"
 )
 
 func JwtAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		//测试先关闭
+		// Read api-token from the request header.
 		token := c.GetHeader("api-token")
 		if token == "" {
 			response.Fail(c, 403, response.TranslateMsg(c, "NeedLogin"))
@@ -31,7 +31,7 @@ func JwtAuth() gin.HandlerFunc {
 		user := service.AllService.UserService.InfoById(uid)
 		//user := &model.User{
 		//	Id:       uid,
-		//	Username: "测试用户",
+		//	Username: "test user",
 		//}
 		if user.Id == 0 {
 			response.Fail(c, 403, response.TranslateMsg(c, "NeedLogin"))

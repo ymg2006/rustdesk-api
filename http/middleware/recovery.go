@@ -6,36 +6,37 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/global"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/ymg2006/rustdesk-api/v2/global"
 )
 
-// Recovery 是一个 panic 恢复中间件，用于替代 gin.Recovery()。
+// Recovery is a panic recovery middleware used instead of gin.Recovery().
 //
-// 安全要点：任何发生在 handler / 后续中间件中的 panic 都只会在服务端日志打印，
-// 绝不会把 panic 内容（可能包含 SQL、堆栈、内部路径等敏感信息）回传给客户端，
-// 以免泄露内部实现细节。客户端始终收到统一的通用 5xx 包络：
+// Security point: any panic in handlers or later middleware is logged only on the server side.
+// Panic content, which may include SQL, stack traces, internal paths, or other sensitive details,
+// is never returned to clients. Clients always receive a generic 5xx envelope:
 //
-//	{"code":500,"message":"服务器内部错误"}
+//	{"code":500,"message":"Internal server error."}
 //
-// SECURITY：默认 gin.Recovery() 仅返回纯文本 "500 Internal Server Error"，
-// 既不统一也不存在泄露风险，但本中间件统一为 JSON 通用文案（HTTP 200 + 业务 code 500），
-// 并可作为最外层（第一个）中间件注册，确保任何 panic 都被兜住。
+// SECURITY: the default gin.Recovery() returns plain text "500 Internal Server Error".
+// This middleware standardizes the response as generic JSON (HTTP 200 + business code 500)
+// and can be registered as the outermost middleware to catch every panic.
 func Recovery() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if r := recover(); r != nil {
-				// 仅记录到服务端日志，不向客户端泄露任何细节。
-				// 注意：测试/未初始化场景下 global.Logger 可能为 nil，需降级到 stdlib log，
-				// 否则 recover 处理函数自身会因 nil 指针再次 panic 而冒泡。
+				// Log only on the server side and do not leak any detail to clients.
+				// Note: global.Logger can be nil in tests or uninitialized scenarios, so fall back to stdlib log.
+				// Otherwise the recovery handler itself could panic again on a nil pointer.
 				if global.Logger != nil {
 					global.Logger.Error("panic recovered: " + fmt.Sprintf("%v", r))
 				} else {
 					log.Printf("[Recovery] panic recovered: %v", r)
 				}
-				// 若响应头尚未写出，才返回统一 5xx 包络（HTTP 200 + code 500），避免 superfluous WriteHeader。
+				// Return the generic 5xx envelope (HTTP 200 + code 500) only if headers have not been written yet.
 				if !c.Writer.Written() {
 					c.Abort()
-					c.JSON(http.StatusOK, gin.H{"code": 500, "message": "服务器内部错误"})
+					c.JSON(http.StatusOK, gin.H{"code": 500, "message": recoveryMessage(c)})
 				}
 			}
 		}()
@@ -43,9 +44,9 @@ func Recovery() gin.HandlerFunc {
 	}
 }
 
-// AbortServerError 以统一通用文案中止请求并返回 500，避免向客户端泄露内部错误细节
-// （如 SQL、堆栈信息）。供控制器在捕获到非预期的服务端错误时调用，
-// 替代直接把 err.Error() 回显给客户端。
+// AbortServerError aborts the request with a generic 500 response to avoid leaking internal error details
+// such as SQL or stack traces. Controllers should use this for unexpected server-side errors instead of
+// returning err.Error() directly to clients.
 func AbortServerError(c *gin.Context) {
 	if !c.Writer.Written() {
 		c.Abort()
@@ -54,7 +55,18 @@ func AbortServerError(c *gin.Context) {
 
 			"code": 500,
 
-			"message": "服务器内部错误",
+			"message": recoveryMessage(c),
 		})
 	}
+}
+
+func recoveryMessage(c *gin.Context) string {
+	if global.Localizer == nil {
+		return "Internal server error."
+	}
+	msg, err := global.Localizer(c.GetHeader("Accept-Language")).LocalizeMessage(&i18n.Message{ID: "ServerInternalError"})
+	if err != nil {
+		return "Internal server error."
+	}
+	return msg
 }

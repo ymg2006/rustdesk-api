@@ -5,12 +5,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/lejianwen/rustdesk-api/v2/model"
+	"github.com/ymg2006/rustdesk-api/v2/model"
 )
 
 type ServerStatusService struct{}
 
-// ListAll 返回所有管理员共享的服务器探测条目
+// ListAll returns server probe entries shared by all administrators
 func (s *ServerStatusService) ListAll() []model.ServerStatusMonitor {
 	var list []model.ServerStatusMonitor
 	DB.Where("enabled = ?", 1).Order("row_id").Find(&list)
@@ -37,7 +37,7 @@ func (s *ServerStatusService) Delete(id uint) error {
 	return nil
 }
 
-// ProbeResult 单条探测结果
+// ProbeResult Single detection result
 type ProbeResult struct {
 	RowId     uint   `json:"row_id"`
 	Name      string `json:"name"`
@@ -49,7 +49,7 @@ type ProbeResult struct {
 	Error     string `json:"error"`
 }
 
-// Probe 对单条条目做 TCP 连通性探测
+// Probe performs TCP connectivity detection on a single entry
 func (s *ServerStatusService) Probe(m model.ServerStatusMonitor) ProbeResult {
 	addr := m.Host
 	if m.Port > 0 {
@@ -69,7 +69,7 @@ func (s *ServerStatusService) Probe(m model.ServerStatusMonitor) ProbeResult {
 	return res
 }
 
-// ProbeAll 探测所有启用中的条目（管理员共享）
+// ProbeAll Probes all enabled entries (shared by administrator)
 func (s *ServerStatusService) ProbeAll() []ProbeResult {
 	list := s.ListAll()
 	results := make([]ProbeResult, 0, len(list))

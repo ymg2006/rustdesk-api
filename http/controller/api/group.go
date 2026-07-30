@@ -2,26 +2,26 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	apiReq "github.com/lejianwen/rustdesk-api/v2/http/request/api"
-	"github.com/lejianwen/rustdesk-api/v2/http/response"
-	apiResp "github.com/lejianwen/rustdesk-api/v2/http/response/api"
-	"github.com/lejianwen/rustdesk-api/v2/model"
-	"github.com/lejianwen/rustdesk-api/v2/service"
+	apiReq "github.com/ymg2006/rustdesk-api/v2/http/request/api"
+	"github.com/ymg2006/rustdesk-api/v2/http/response"
+	apiResp "github.com/ymg2006/rustdesk-api/v2/http/response/api"
+	"github.com/ymg2006/rustdesk-api/v2/model"
+	"github.com/ymg2006/rustdesk-api/v2/service"
 	"net/http"
 )
 
 type Group struct {
 }
 
-// Users 用户列表
-// @Tags 群组
-// @Summary 用户列表
-// @Description 用户列表
+// Users user list
+// @Tags group
+// @Summary User list
+// @Description User list
 // @Accept  json
 // @Produce  json
-// @Param page query int false "页码"
-// @Param pageSize query int false "每页数量"
-// @Param status query int false "状态"
+// @Param page query int false "page number"
+// @Param pageSize query int false "Quantity per page"
+// @Param status query int false "state"
 // @Param accessible query string false "accessible"
 // @Success 200 {object} response.DataResponse{data=[]api.UserPayload}
 // @Failure 500 {object} response.ErrorResponse
@@ -38,7 +38,7 @@ func (g *Group) Users(c *gin.Context) {
 	gr := service.AllService.GroupService.InfoById(u.GroupId)
 	userList := &model.UserList{}
 	if !*u.IsAdmin && gr.Type != model.GroupTypeShare {
-		//仅能获取到自己
+		//You can only get yourself
 		userList.Users = append(userList.Users, u)
 		userList.Total = 1
 	} else {
@@ -58,14 +58,14 @@ func (g *Group) Users(c *gin.Context) {
 }
 
 // Peers
-// @Tags 群组
-// @Summary 机器
-// @Description 机器
+// @Tags group
+// @Summary Machine
+// @Description machine
 // @Accept  json
 // @Produce  json
-// @Param page query int false "页码"
-// @Param pageSize query int false "每页数量"
-// @Param status query int false "状态"
+// @Param page query int false "page number"
+// @Param pageSize query int false "Quantity per page"
+// @Param status query int false "state"
 // @Param accessible query string false "accessible"
 // @Success 200 {object} response.DataResponse
 // @Failure 500 {object} response.Response
@@ -82,7 +82,7 @@ func (g *Group) Peers(c *gin.Context) {
 	gr := service.AllService.GroupService.InfoById(u.GroupId)
 	users := make([]*model.User, 0, 1)
 	if !*u.IsAdmin && gr.Type != model.GroupTypeShare {
-		//仅能获取到自己
+		//You can only get yourself
 		users = append(users, u)
 	} else {
 		users = service.AllService.UserService.ListIdAndNameByGroupId(u.GroupId)
@@ -122,14 +122,14 @@ func (g *Group) Peers(c *gin.Context) {
 }
 
 // Device
-// @Tags 群组
-// @Summary 设备
-// @Description 机器
+// @Tags group
+// @Summary Equipment
+// @Description machine
 // @Accept  json
 // @Produce  json
-// @Param page query int false "页码"
-// @Param pageSize query int false "每页数量"
-// @Param status query int false "状态"
+// @Param page query int false "page number"
+// @Param pageSize query int false "Quantity per page"
+// @Param status query int false "state"
 // @Param accessible query string false "accessible"
 // @Success 200 {object} response.DataResponse
 // @Failure 500 {object} response.Response
@@ -138,7 +138,7 @@ func (g *Group) Peers(c *gin.Context) {
 func (g *Group) Device(c *gin.Context) {
 	u := service.AllService.UserService.CurUser(c)
 	if !service.AllService.UserService.IsAdmin(u) {
-		response.Error(c, "Permission denied")
+		response.Error(c, response.TranslateMsg(c, "PermissionDenied"))
 		return
 	}
 	allGroup := service.AllService.GroupService.DeviceGroupList(1, 999, nil)

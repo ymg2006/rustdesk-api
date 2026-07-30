@@ -5,21 +5,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lejianwen/rustdesk-api/v2/model"
+	"github.com/glebarez/sqlite"
 	"github.com/sirupsen/logrus"
-	"gorm.io/driver/sqlite"
+	"github.com/ymg2006/rustdesk-api/v2/model"
 	"gorm.io/gorm"
 )
 
-// setupAlertTestDB 初始化内存 SQLite 与全局依赖，并返回 db。
-// 每个测试独立建库，互不干扰；测试结束还原全局变量以免污染同包其它测试。
+// setupAlertTestDB Initializes in-memory SQLite with global dependencies and returns db.
+// Each test builds a database independently without interfering with each other; after the test is completed, global variables are restored to avoid contaminating other tests in the same package.
 func setupAlertTestDB(t *testing.T) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
 	if sqlDB, err := db.DB(); err == nil {
-		sqlDB.SetMaxOpenConns(1) // 内存库需单连接，避免各连接独立成库
+		sqlDB.SetMaxOpenConns(1) // The memory library needs a single connection to avoid each connection becoming an independent library.
 	}
 	if err := db.AutoMigrate(&model.Peer{}, &model.AlertConfig{}, &model.AlertTarget{}, &model.StationMessage{}, &model.AlertChannel{}); err != nil {
 		t.Fatalf("migrate: %v", err)
@@ -39,20 +39,20 @@ func setupAlertTestDB(t *testing.T) *gorm.DB {
 
 type seedOpts struct {
 	offlineMin     int
-	peerLastOnline int64 // 绝对时间戳；0 表示按 offlineMin 推算为“已离线超过阈值”
-	consecutive    int   // 连续触发天数（预置）
-	lastTriggerDay int   // 最近触发日期（预置）
+	peerLastOnline int64 // Absolute timestamp; 0 means "offline exceeded the threshold" calculated by offlineMin
+	consecutive    int   // Number of consecutive trigger days (preset)
+	lastTriggerDay int   // Last trigger date (preset)
 	notifiedPeers  string
 	enabled        int
 }
 
-// seedScenario 构造：一个离线设备 + 一条 smtp 告警规则(指向该设备) + 一条 station 规则(同用户，用于计数推送)。
-// 返回 smtp 配置的主键与设备 id。
+// seedScenario structure: an offline device + an smtp alarm rule (pointing to the device) + a station rule (same as user, used to count pushes).
+// Returns the primary key and device id of the smtp configuration.
 func seedScenario(t *testing.T, db *gorm.DB, o seedOpts) (uint, string) {
 	peerId := "peer-1"
 	lastOnline := o.peerLastOnline
 	if lastOnline == 0 {
-		lastOnline = time.Now().Unix() - int64(o.offlineMin)*60 - 600 // 远超阈值，判定为离线
+		lastOnline = time.Now().Unix() - int64(o.offlineMin)*60 - 600 // Far exceeds the threshold and is determined to be offline.
 	}
 	if o.enabled == 0 {
 		o.enabled = 1
@@ -63,16 +63,16 @@ func seedScenario(t *testing.T, db *gorm.DB, o seedOpts) (uint, string) {
 	}
 
 	cfg := model.AlertConfig{
-		UserId:                1,
-		Channel:               "smtp",
-		ChannelId:             0, // 无通道行 -> SendByConfig 安全空操作，不会发起网络
-		Name:                  "smtp-cfg",
-		OfflineMin:            o.offlineMin,
-		Enabled:               o.enabled,
-		MonitorAll:            2,
+		UserId:                 1,
+		Channel:                "smtp",
+		ChannelId:              0, // No channel line -> SendByConfig safe no-op, no network will be initiated
+		Name:                   "smtp-cfg",
+		OfflineMin:             o.offlineMin,
+		Enabled:                o.enabled,
+		MonitorAll:             2,
 		ConsecutiveTriggerDays: o.consecutive,
-		LastTriggerDay:        o.lastTriggerDay,
-		NotifiedPeers:         o.notifiedPeers,
+		LastTriggerDay:         o.lastTriggerDay,
+		NotifiedPeers:          o.notifiedPeers,
 	}
 	if err := db.Create(&cfg).Error; err != nil {
 		t.Fatalf("create cfg: %v", err)
@@ -80,7 +80,7 @@ func seedScenario(t *testing.T, db *gorm.DB, o seedOpts) (uint, string) {
 	if err := db.Create(&model.AlertTarget{AlertId: cfg.RowId, TargetType: "peer", TargetId: peerId, TargetName: peerId}).Error; err != nil {
 		t.Fatalf("create target: %v", err)
 	}
-	// 同用户 station 规则：仅用于 populate userStationCfg，使推送时写入 station_messages 以便计数
+	// Same as user station rules: only used for populate userStationCfg, so that station_messages will be written to count when pushing
 	if err := db.Create(&model.AlertConfig{UserId: 1, Channel: "station", ChannelId: 0, Name: "station-cfg", OfflineMin: o.offlineMin, Enabled: 1, MonitorAll: 2}).Error; err != nil {
 		t.Fatalf("create station cfg: %v", err)
 	}
@@ -111,8 +111,8 @@ func getCfg(t *testing.T, db *gorm.DB, rowId uint) model.AlertConfig {
 	return c
 }
 
-// TestAlert_WeightAccumulation 验证：每 5 分钟检测一次，离线则权重+1，
-// 权重累积到 10 才触发一次推送（之后冷却期阻止重复推送）。
+// TestAlert_WeightAccumulation verification: detected every 5 minutes, if offline, the weight will be +1.
+// A push is triggered only when the weight accumulates to 10 (then a cool-down period prevents repeated push).
 func TestAlert_WeightAccumulation(t *testing.T) {
 	db := setupAlertTestDB(t)
 	cfgRowId, _ := seedScenario(t, db, seedOpts{offlineMin: 5})
@@ -122,81 +122,81 @@ func TestAlert_WeightAccumulation(t *testing.T) {
 	}
 
 	if got := countStationMessages(t, db); got != 1 {
-		t.Fatalf("权重达到 10 应推送 1 次，实际 %d 次", got)
+		t.Fatalf("When the weight reaches 10, it should be pushed once, but actually%dtimes", got)
 	}
 	rec := parseNotifiedPeers(getCfg(t, db, cfgRowId).NotifiedPeers)["peer-1"]
 	if rec == nil {
-		t.Fatalf("未找到 peer-1 的通知记录")
+		t.Fatalf("No notification record found for peer-1")
 	}
 	if rec.Weight < offlineWeightThreshold {
-		t.Fatalf("权重应 >= %d，实际 %d", offlineWeightThreshold, rec.Weight)
+		t.Fatalf("Weight should be >=%d, actual%d", offlineWeightThreshold, rec.Weight)
 	}
 }
 
-// TestAlert_ThresholdNotReachedNoPush 验证：权重未达阈值不推送。
+// TestAlert_ThresholdNotReachedNoPush Verification: No pushing if the weight does not reach the threshold.
 func TestAlert_ThresholdNotReachedNoPush(t *testing.T) {
 	db := setupAlertTestDB(t)
 	seedScenario(t, db, seedOpts{offlineMin: 5})
-	// 仅检测 9 次，权重最高到 9，不足 10
+	// Only detected 9 times, the weight is up to 9, less than 10
 	for i := 0; i < 9; i++ {
 		AllService.AlertService.checkOfflineDevices()
 	}
 	if got := countStationMessages(t, db); got != 0 {
-		t.Fatalf("权重未达阈值不应推送，实际 %d 次", got)
+		t.Fatalf("The weight does not reach the threshold and should not be pushed. Actual%dtimes", got)
 	}
 }
 
-// TestAlert_DailyWeightReset 验证：跨天重置权重（WeightDay 与今日不同则归零后重新累积）。
+// TestAlert_DailyWeightReset Verification: Reset weight across days (If WeightDay is different from today, it will be reset to zero and then accumulated again).
 func TestAlert_DailyWeightReset(t *testing.T) {
 	db := setupAlertTestDB(t)
 	today := dayKey(time.Now().Unix())
 	yesterday := dayKey(time.Now().Unix() - 86400)
 	cfgRowId, _ := seedScenario(t, db, seedOpts{
 		offlineMin:    5,
-		notifiedPeers: npJSON(5, yesterday, 0, 0), // 昨天累积的权重 5
+		notifiedPeers: npJSON(5, yesterday, 0, 0), // Yesterday's accumulated weight 5
 	})
 	AllService.AlertService.checkOfflineDevices()
 
 	rec := parseNotifiedPeers(getCfg(t, db, cfgRowId).NotifiedPeers)["peer-1"]
 	if rec == nil {
-		t.Fatalf("未找到通知记录")
+		t.Fatalf("Notification record not found")
 	}
 	if rec.Weight != 1 {
-		t.Fatalf("每日重置后权重应为 1（归零后本次 +1），实际 %d", rec.Weight)
+		t.Fatalf("The weight should be 1 after daily reset (+1 this time after zeroing), actual%d", rec.Weight)
 	}
 	if rec.WeightDay != today {
-		t.Fatalf("WeightDay 应为今日 %d，实际 %d", today, rec.WeightDay)
+		t.Fatalf("WeightDay should be%dtoday, actual%d", today, rec.WeightDay)
 	}
 }
 
-// TestAlert_OnlineResetsWeight 验证：设备上线即重置其离线权重。
+// TestAlert_OnlineResetsWeight verification: The device resets its offline weight when it goes online.
 func TestAlert_OnlineResetsWeight(t *testing.T) {
 	db := setupAlertTestDB(t)
 	today := dayKey(time.Now().Unix())
 	cfgRowId, _ := seedScenario(t, db, seedOpts{
 		offlineMin:     5,
-		peerLastOnline: time.Now().Unix(), // 当前在线
+		peerLastOnline: time.Now().Unix(), // Currently online
 		notifiedPeers:  npJSON(5, today, 0, 0),
 	})
 	AllService.AlertService.checkOfflineDevices()
 
 	rec := parseNotifiedPeers(getCfg(t, db, cfgRowId).NotifiedPeers)["peer-1"]
 	if rec == nil {
-		t.Fatalf("未找到通知记录")
+		t.Fatalf("Notification record not found")
 	}
 	if rec.Weight != 0 {
-		t.Fatalf("上线后权重应重置为 0，实际 %d", rec.Weight)
+		t.Fatalf("The weight should be reset to 0 after going online, actual%d", rec.Weight)
 	}
 	if got := countStationMessages(t, db); got != 0 {
-		t.Fatalf("在线设备不应推送，实际 %d 次", got)
+		t.Fatalf("Online device should not push, actual%dtimes", got)
 	}
 }
 
-// TestAlert_WithinThresholdNoWeight 验证：刚离线但尚未超过阈值时长，不计入权重。
+// TestAlert_WithinThresholdNoWeight Verification: It is just offline but has not exceeded the threshold duration, and will not be included in the weight.
 func TestAlert_WithinThresholdNoWeight(t *testing.T) {
 	db := setupAlertTestDB(t)
 	today := dayKey(time.Now().Unix())
-	// 离线仅 2 分钟，阈值 5 分钟 -> 不应累积权重
+	// Offline only 2 minutes, threshold 5 minutes -> should not accumulate weight
 	cfgRowId, _ := seedScenario(t, db, seedOpts{
 		offlineMin:     5,
 		peerLastOnline: time.Now().Unix() - 120,
@@ -206,78 +206,78 @@ func TestAlert_WithinThresholdNoWeight(t *testing.T) {
 
 	rec := parseNotifiedPeers(getCfg(t, db, cfgRowId).NotifiedPeers)["peer-1"]
 	if rec == nil || rec.Weight != 0 {
-		t.Fatalf("阈值内离线不应累积权重，实际 %+v", rec)
+		t.Fatalf("Offline within the threshold should not accumulate weight, actual%+v", rec)
 	}
 	if got := countStationMessages(t, db); got != 0 {
-		t.Fatalf("阈值内不应推送，实际 %d 次", got)
+		t.Fatalf("Should not be pushed within the threshold, actual%dtimes", got)
 	}
 }
 
-// TestAlert_ConsecutiveThreeDaysSuppress 验证：连续触发满 3 天后不再推送邮件。
+// TestAlert_ConsecutiveThreeDaysSuppress verification: no more emails will be pushed after 3 consecutive days of triggering.
 func TestAlert_ConsecutiveThreeDaysSuppress(t *testing.T) {
 	db := setupAlertTestDB(t)
 	today := dayKey(time.Now().Unix())
 	cfgRowId, _ := seedScenario(t, db, seedOpts{
-		offlineMin:  5,
-		consecutive: 3,                       // 已连续 3 天
-		notifiedPeers: npJSON(10, today, 0, 0), // 权重已达标，本应触发
+		offlineMin:    5,
+		consecutive:   3,                       // 3 days in a row
+		notifiedPeers: npJSON(10, today, 0, 0), // The weight has reached the standard and should have been triggered.
 	})
 	AllService.AlertService.checkOfflineDevices()
 
 	if got := countStationMessages(t, db); got != 0 {
-		t.Fatalf("连续3天以上应停止推送，实际 %d 次", got)
+		t.Fatalf("Pushing should be stopped for more than 3 consecutive days, actual%dtimes", got)
 	}
 	if c := getCfg(t, db, cfgRowId); c.ConsecutiveTriggerDays != 3 {
-		t.Fatalf("抑制期间连续天数应保持 3，实际 %d", c.ConsecutiveTriggerDays)
+		t.Fatalf("Number of consecutive days during suppression should remain 3, actual%d", c.ConsecutiveTriggerDays)
 	}
 }
 
-// TestAlert_ReconnectResetsConsecutive 验证：设备重新上线重置“连续3天”限制。
+// TestAlert_ReconnectResetsConsecutive Verification: The device goes online again to reset the "3 consecutive days" limit.
 func TestAlert_ReconnectResetsConsecutive(t *testing.T) {
 	db := setupAlertTestDB(t)
 	cfgRowId, _ := seedScenario(t, db, seedOpts{
 		offlineMin:     5,
 		consecutive:    3,
-		peerLastOnline: time.Now().Unix(), // 在线 -> 触发重置
+		peerLastOnline: time.Now().Unix(), // Online -> Trigger reset
 	})
 	AllService.AlertService.checkOfflineDevices()
 
 	if c := getCfg(t, db, cfgRowId); c.ConsecutiveTriggerDays != 0 || c.LastTriggerDay != 0 {
-		t.Fatalf("重新上线应重置连续限制，实际 days=%d lastDay=%d", c.ConsecutiveTriggerDays, c.LastTriggerDay)
+		t.Fatalf("Coming back online should reset the continuity limit, actual days=%dlastDay=%d", c.ConsecutiveTriggerDays, c.LastTriggerDay)
 	}
 }
 
-// TestAlert_MaxThreePerDay 验证：同一设备当天已达 3 次上限，不再推送。
+// TestAlert_MaxThreePerDay verification: The same device has reached the upper limit of 3 times on the same day and will no longer be pushed.
 func TestAlert_MaxThreePerDay(t *testing.T) {
 	db := setupAlertTestDB(t)
 	today := dayKey(time.Now().Unix())
 	cfgRowId, _ := seedScenario(t, db, seedOpts{
-		offlineMin:     5,
-		notifiedPeers:  npJSON(10, today, maxNotifyPerDay, time.Now().Unix()), // 当天已 3 次
+		offlineMin:    5,
+		notifiedPeers: npJSON(10, today, maxNotifyPerDay, time.Now().Unix()), // Already 3 times that day
 	})
 	AllService.AlertService.checkOfflineDevices()
 
 	if got := countStationMessages(t, db); got != 0 {
-		t.Fatalf("当天已达上限不应推送，实际 %d 次", got)
+		t.Fatalf("The upper limit has been reached for the day and should not be pushed. Actual%dtimes", got)
 	}
 	rec := parseNotifiedPeers(getCfg(t, db, cfgRowId).NotifiedPeers)["peer-1"]
 	if rec == nil || rec.Count != maxNotifyPerDay {
-		t.Fatalf("已达上限时 Count 应保持 %d，实际 %+v", maxNotifyPerDay, rec)
+		t.Fatalf("The upper limit has been reached. Count should remain%dand the actual value is%+v", maxNotifyPerDay, rec)
 	}
 }
 
-// TestAlert_Cooldown 验证：冷却期内（与上一次推送间隔 < notifyCooldown）不重复推送。
+// TestAlert_Cooldown verification: no repeated push during the cooling period (interval with the last push < notifyCooldown).
 func TestAlert_Cooldown(t *testing.T) {
 	db := setupAlertTestDB(t)
 	today := dayKey(time.Now().Unix())
 	cfgRowId, _ := seedScenario(t, db, seedOpts{
-		offlineMin:     5,
-		notifiedPeers:  npJSON(10, today, 0, time.Now().Unix()), // 刚刚推送过
+		offlineMin:    5,
+		notifiedPeers: npJSON(10, today, 0, time.Now().Unix()), // Just pushed
 	})
 	AllService.AlertService.checkOfflineDevices()
 
 	if got := countStationMessages(t, db); got != 0 {
-		t.Fatalf("冷却期内不应推送，实际 %d 次", got)
+		t.Fatalf("Should not be pushed during the cooling period, actual%dtimes", got)
 	}
 	_ = cfgRowId
 }

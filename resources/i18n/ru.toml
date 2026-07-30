@@ -48,6 +48,46 @@ description = "System error."
 one = "Системная ошибка."
 other = "Системная ошибка."
 
+[MfaRequired]
+description = "MFA required."
+one = "Требуется многофакторная аутентификация (MFA), введите код подтверждения."
+other = "Требуется многофакторная аутентификация (MFA), введите код подтверждения."
+
+[MfaTokenInvalid]
+description = "MFA token invalid."
+one = "Проверка MFA истекла, войдите снова."
+other = "Проверка MFA истекла, войдите снова."
+
+[MfaCodeError]
+description = "MFA code error."
+one = "Неверный код подтверждения, попробуйте снова."
+other = "Неверный код подтверждения, попробуйте снова."
+
+[MfaTokenMissing]
+description = "MFA token missing from request."
+one = "Токен MFA отсутствует или истек, вернитесь к входу и попробуйте снова."
+other = "Токен MFA отсутствует или истек, вернитесь к входу и попробуйте снова."
+
+[MfaSecretEmpty]
+description = "MFA secret empty."
+one = "Сначала сгенерируйте секрет MFA."
+other = "Сначала сгенерируйте секрет MFA."
+
+[PasswordError]
+description = "Password error."
+one = "Неверный пароль."
+other = "Неверный пароль."
+
+[MfaEnabled]
+description = "MFA enabled."
+one = "Многофакторная аутентификация включена."
+other = "Многофакторная аутентификация включена."
+
+[MfaDisabled]
+description = "MFA disabled."
+one = "Многофакторная аутентификация отключена."
+other = "Многофакторная аутентификация отключена."
+
 [ConfigNotFound]
 description = "Config not found."
 one = "Конфигурация не найдена."
@@ -167,3 +207,310 @@ other = "Заблокировано."
 description = "Register success wait admin confirm."
 one = "Регистрация прошла успешно, ожидайте подтверждения администратора."
 other = "Регистрация прошла успешно, ожидайте подтверждения администратора."
+
+[ParentDeptNotFound]
+description = "Parent department not found."
+one = "Родительский отдел не найден."
+other = "Родительский отдел не найден."
+
+[DeptCycleError]
+description = "Department hierarchy cycle detected."
+one = "Нельзя выбрать сам отдел или его подотдел в качестве родительского."
+other = "Нельзя выбрать сам отдел или его подотдел в качестве родительского."
+
+[DeptHasChildren]
+description = "Department has sub-departments."
+one = "Нельзя удалить отдел, у которого есть подотделы."
+other = "Нельзя удалить отдел, у которого есть подотделы."
+
+[DeptHasUsers]
+description = "Department has members."
+one = "Нельзя удалить отдел, в котором есть участники."
+other = "Нельзя удалить отдел, в котором есть участники."
+
+[AccountExpired]
+description = "Account expired."
+one = "Срок действия учетной записи истек, обратитесь к администратору."
+other = "Срок действия учетной записи истек, обратитесь к администратору."
+
+[InviteCodeRequired]
+description = "Invite code required."
+one = "Для регистрации требуется код приглашения."
+other = "Для регистрации требуется код приглашения."
+
+[InviteCodeInvalid]
+description = "Invite code invalid."
+one = "Код приглашения недействителен или истек."
+other = "Код приглашения недействителен или истек."
+
+[UserDisabled]
+description = "User disabled."
+one = "Пользователь отключен."
+other = "Пользователь отключен."
+
+[ServerInternalError]
+description = "Internal server error."
+one = "Внутренняя ошибка сервера."
+other = "Внутренняя ошибка сервера."
+
+[ParamError]
+description = "Parameter error."
+one = "Ошибка параметра."
+other = "Ошибка параметра."
+
+[FieldRequired]
+description = "Field required."
+one = "{{.P0}} обязателен."
+other = "{{.P0}} обязателен."
+
+[ShareTokenRequired]
+description = "Share token required."
+one = "Требуется токен общего доступа."
+other = "Требуется токен общего доступа."
+
+[ShareNotFound]
+description = "Share not found."
+one = "Общий доступ не найден."
+other = "Общий доступ не найден."
+
+[ShareExpired]
+description = "Share expired."
+one = "Срок действия общего доступа истек."
+other = "Срок действия общего доступа истек."
+
+[PeerNotFound]
+description = "Peer not found."
+one = "Устройство не найдено."
+other = "Устройство не найдено."
+
+[PermissionDenied]
+description = "Permission denied."
+one = "Доступ запрещен."
+other = "Доступ запрещен."
+
+[MissingOutTradeNo]
+description = "Missing out_trade_no."
+one = "Отсутствует out_trade_no."
+other = "Отсутствует out_trade_no."
+
+[AuthorizationInProgress]
+description = "Authorization in progress."
+one = "Авторизация выполняется, войдите и привяжите аккаунт."
+other = "Авторизация выполняется, войдите и привяжите аккаунт."
+
+[NoAuthedOidcFound]
+description = "No authorized OIDC found."
+one = "Авторизованная OIDC-сессия не найдена."
+other = "Авторизованная OIDC-сессия не найдена."
+
+[Unauthorized]
+description = "Unauthorized."
+one = "Не авторизовано."
+other = "Не авторизовано."
+
+[InvalidRustdeskKey]
+description = "Invalid RustDesk key."
+one = "Недействительный ключ RustDesk."
+other = "Недействительный ключ RustDesk."
+
+[NameRequired]
+description = "Name required."
+one = "Введите имя."
+other = "Введите имя."
+
+[ChannelNameRequired]
+description = "Channel name required."
+one = "Введите название канала."
+other = "Введите название канала."
+
+[SaveFailed]
+description = "Save failed."
+one = "Не удалось сохранить."
+other = "Не удалось сохранить."
+
+[SendFailed]
+description = "Send failed."
+one = "Не удалось отправить."
+other = "Не удалось отправить."
+
+[RecordNotFound]
+description = "Record not found."
+one = "Запись не найдена."
+other = "Запись не найдена."
+
+[ChannelInUse]
+description = "Channel in use."
+one = "Этот канал используется правилами оповещения и не может быть удален."
+other = "Этот канал используется правилами оповещения и не может быть удален."
+
+[ChannelTypeMissing]
+description = "Channel type missing."
+one = "Отсутствует тип канала."
+other = "Отсутствует тип канала."
+
+[SelectNotifyChannel]
+description = "Select notification channel."
+one = "Выберите канал уведомлений."
+other = "Выберите канал уведомлений."
+
+[NotifyChannelNotFound]
+description = "Notification channel not found."
+one = "Канал уведомлений не найден."
+other = "Канал уведомлений не найден."
+
+[IdRequired]
+description = "Требуется идентификатор."
+one = "Требуется ID."
+other = "Требуется ID."
+
+[VersionRequired]
+description = "Version required."
+one = "Требуется номер версии."
+other = "Требуется номер версии."
+
+[DownloadUrlRequired]
+description = "Download URL required."
+one = "Требуется ссылка для скачивания."
+other = "Требуется ссылка для скачивания."
+
+[VersionNotFound]
+description = "Version not found."
+one = "Версия не найдена."
+other = "Версия не найдена."
+
+[NameAndDownloadUrlRequired]
+description = "Name and download URL required."
+one = "Требуются имя и адрес загрузки."
+other = "Требуются имя и адрес загрузки."
+
+[AnnouncementNotFound]
+description = "Объявление не найдено."
+one = "Объявление не найдено."
+other = "Объявление не найдено."
+
+[TitleRequired]
+description = "Требуется заголовок."
+
+[ContentRequired]
+description = "Требуется содержимое."
+
+[InvalidAnnouncementStatus]
+description = "Статус объявления должен быть 0 или 1."
+one = "Требуется заголовок."
+other = "Требуется заголовок."
+
+[UnsupportedOnlineRestart]
+description = "Unsupported online restart."
+one = "Онлайн-перезапуск службы не поддерживается на текущей платформе. Перезапустите процесс вручную."
+other = "Онлайн-перезапуск службы не поддерживается на текущей платформе. Перезапустите процесс вручную."
+
+[ConfigPathUnknown]
+description = "Config path unknown."
+one = "Путь к файлу конфигурации неизвестен."
+other = "Путь к файлу конфигурации неизвестен."
+
+[ReadConfigFailed]
+description = "Read config failed."
+one = "Не удалось прочитать файл конфигурации."
+other = "Не удалось прочитать файл конфигурации."
+
+[WriteConfigFailed]
+description = "Write config failed."
+one = "Не удалось записать файл конфигурации."
+other = "Не удалось записать файл конфигурации."
+
+[ConfigFormatInvalid]
+description = "Invalid config format."
+one = "Недопустимый формат конфигурации, проверьте ввод."
+other = "Недопустимый формат конфигурации, проверьте ввод."
+
+[ConfigYamlInvalid]
+description = "Invalid YAML config."
+one = "Недопустимый формат конфигурации (ошибка разбора YAML), проверьте синтаксис YAML."
+other = "Недопустимый формат конфигурации (ошибка разбора YAML), проверьте синтаксис YAML."
+
+[UnsupportedDbType]
+description = "Unsupported database type."
+one = "Неподдерживаемый тип базы данных."
+other = "Неподдерживаемый тип базы данных."
+
+[ExportDbFailed]
+description = "Export database failed."
+one = "Не удалось экспортировать базу данных."
+other = "Не удалось экспортировать базу данных."
+
+[InvalidId]
+description = "Invalid ID."
+one = "Недействительный ID."
+other = "Недействительный ID."
+
+[SubscriptionExpired]
+description = "Subscription expired."
+one = "Срок действия подписки истек."
+other = "Срок действия подписки истек."
+
+[OrderNotFound]
+description = "Order not found."
+one = "Заказ не найден."
+other = "Заказ не найден."
+
+[OrderNotPaid]
+description = "Order not paid."
+one = "Заказ не оплачен."
+other = "Заказ не оплачен."
+
+[CodeNotFound]
+description = "Код не найден."
+one = "Код не найден."
+other = "Код не найден."
+
+[CodeUsed]
+description = "Код уже использован."
+one = "Код уже использован."
+other = "Код уже использован."
+
+[CodeRevoked]
+description = "Код отозван."
+one = "Код отозван."
+other = "Код отозван."
+
+[CodeExpired]
+description = "Срок действия кода истёк."
+one = "Срок действия кода истек."
+other = "Срок действия кода истек."
+
+[LoginFailed]
+description = "Login failed."
+one = "Не удалось войти."
+other = "Не удалось войти."
+
+[UserNotFound]
+description = "User not found."
+one = "Пользователь не найден."
+other = "Пользователь не найден."
+
+[LoginBanned]
+description = "Login banned."
+one = "Вход заблокирован."
+other = "Вход заблокирован."
+
+[NoCaptchaRequired]
+description = "No captcha required."
+one = "Капча не требуется."
+other = "Капча не требуется."
+
+[RequiredFields]
+description = "Required fields missing."
+one = "Отсутствуют обязательные поля: {{.P0}}."
+other = "Отсутствуют обязательные поля: {{.P0}}."
+
+[InvalidSourceType]
+description = "Invalid source type."
+one = "Недопустимый тип источника. Поддерживаемые значения: device_group / ab_tags."
+other = "Недопустимый тип источника. Поддерживаемые значения: device_group / ab_tags."
+
+[CleanupYearsInvalid]
+description = "Invalid cleanup years."
+one = "Недопустимые параметры. Можно очищать только сообщения старше 1 или 3 лет."
+other = "Недопустимые параметры. Можно очищать только сообщения старше 1 или 3 лет."
+

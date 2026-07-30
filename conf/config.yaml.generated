@@ -1,152 +1,193 @@
-# 系统语言，zh-CN 简体中文
-lang: "zh-CN"
+# System Language, en-US
+lang: "en-US"
 
-# 应用基础配置模块
+# Application Basic Configuration Modules
 app:
-  web-client: 1  # 网页端远程控制客户端开关：1启用 0禁用
-  register: false # 是否开放用户自助注册功能，false关闭注册
-  register-status: 2 # 新注册用户默认账号状态：1正常启用 2禁用锁定
-  captcha-threshold: 3 # 验证码触发阈值：<0永久关闭验证码；0每次登录都要；>0连续失败N次后启用验证码
-  ban-threshold: 10 # 登录失败封禁阈值：0关闭自动封禁；>0连续输错密码达到次数自动封禁账号
-  ban-window-minutes: 15 # 连续登录失败计数的滑动窗口(分钟)，默认15；窗口外的旧失败记录会被自动清理
-  ban-duration-minutes: 30 # 触发封禁后该 IP 被禁止登录的时长(分钟)，默认30
-  show-swagger: 0 # 是否展示API接口文档Swagger：1开启 0关闭（生产环境建议关闭）
-  token-expire: 7200h # 登录凭证Token有效期
-  web-sso: true # 开启Web单点登录SSO能力
-  disable-pwd-login: false # 是否禁用账号密码登录，false保留密码登录
+  web-client: 1  # Web-based remote control client switch: 1 Enabled, 0 Disabled
+  register: true # Whether to enable user self-registration function, false disables registration
+  register-status: 2 # Newly registered users' default account status: 1. Normally enabled 2. Disabled and locked
+  captcha-threshold: 3 # CAPTCHA trigger threshold: <0 Permanently disable CAPTCHA; 0 CAPTCHA on every login; >0 Enable CAPTCHA after N consecutive failed login attempts.
+  ban-threshold: 10 # Login failure ban threshold: 0 disables automatic ban; >0 automatically bans the account after a certain number of consecutive incorrect password attempts.
+  ban-window-minutes: 15 # A sliding window (minutes) for counting consecutive failed login attempts, default 15; older failed login records outside the window will be automatically cleared.
+  ban-duration-minutes: 30 # The duration (in minutes) during which this IP address will be banned from logging in after the ban is triggered, default 30.
+  show-swagger: 0 # Whether to display API documentation Swagger: 1 for enabled, 0 for disabled (recommended to disable in production environments)
+  token-expire: 7200h # Login Token Validity Period
+  web-sso: true # Enable Web Single Sign-On (SSO) capability
+  disable-pwd-login: false # Disable account and password login, false: retain password login
+  invite-only: true # Enable Invitation Code Mode
 
-# 后台管理面板配置模块
+# Backend Management Panel Configuration Module
 admin:
-  title: "RustDesk API 管理平台" # 管理后台页面标题
-  hello-file: "./conf/admin/hello.html"  # 管理后台首页自定义html文件，配置后优先加载文件内容
-  hello: "" # 管理后台首页自定义文本内容，hello-file存在时此字段失效
-  # ID服务器与中继服务器端口，参考官方issue#257
-  id-server-port: 21116  # ID服务器监听端口（服务端命令启动使用）
-  relay-server-port: 21117 # 中继转发服务器监听端口（服务端命令启动使用）
-  relay-stats-host: "127.0.0.1" # hbbr 负载/连接数查询地址(仅本机回环，api-server 需与 hbbr 同机)
+  title: "RustDesk" # Management Backend Page Title
+  hello-file: "./conf/admin/hello.html" # Configure a custom HTML file for the admin backend homepage; load the file content first after configuration.
+  hello: ""# Custom text content for the admin backend homepage: This field is invalid if hello-file exists.
+  # ID server and relay server ports, refer to official issue #257
+  id-server-port: 21116 # ID server listening port (used to start the server using the command)
+  relay-server-port: 21117 # Listening port for the relay server (used to start the server using the command).
+  relay-stats-host: "127.0.0.1" # hbbr load/connection count query address (local loopback only, api-server must be on the same machine as hbbr)
 
-# Gin Web框架相关配置
+# Gin Web Framework Related Configurations
 gin:
-  api-addr: "0.0.0.0:21114" # API服务监听地址端口，0.0.0.0允许所有网卡外网访问
-  mode: "release" # Gin运行模式：release生产/debug调试/test测试
-  resources-path: 'resources'  # 静态资源文件存放目录，对外可访问
-  trust-proxy: "127.0.0.1" # 信任反向代理IP，填写代理地址后可正确获取真实客户端IP，空则不启用
+  api-addr: "0.0.0.0:21114" # API service listening address and port, 0.0.0.0, allows all network cards to access from the external network.
+  mode: "release" # Gin running modes: release (production)/debug/test
+  resources-path: 'resources' # Directory for storing static resource files, accessible to the public.
+  trust-proxy: "127.0.0.1" # Trust the reverse proxy IP. Entering the proxy address will ensure the correct acquisition of the real client IP. Leaving it blank will disable the function.
 
-# GORM数据库通用配置（ORM框架）
+# General configuration for GORM database (ORM framework)
 gorm:
-  type: "sqlite" # 默认数据库类型：sqlite/mysql/postgresql，切换数据库需修改对应库配置
-  max-idle-conns: 10 # 数据库连接池最大空闲连接数
-  max-open-conns: 100 # 数据库连接池最大并发打开连接数
+  type: "sqlite" # General GORM Database Configuration (ORM Framework) # Default database types: sqlite/mysql/postgresql. Switching databases requires modifying the corresponding database configuration.
+  max-idle-conns: 10 # Maximum number of idle connections in the database connection pool
+  max-open-conns: 100 # Maximum number of concurrent open connections in a database connection pool
 
-# MySQL数据库连接配置，type=mysql时生效
+# MySQL database connection configuration, takes effect when type=mysql
 mysql:
-  username: "" # MySQL数据库用户名
-  password: "" # MySQL数据库密码
-  addr: "" # MySQL连接地址，格式 ip:port
-  dbname: "" # 需要连接的数据库库名
-  tls: "false" # MySQL TLS加密开关：true开启/false关闭/skip-verify跳过证书校验/custom自定义证书
+  username: "" # MySQL database username
+  password: "" # MySQL database password
+  addr: "" # MySQL connection address, format: ip:port
+  dbname: "" # Database name to connect to
+  tls: "false" # MySQL TLS encryption switch: true for on/false for off/skip-verify to skip certificate verification/custom for custom certificates
 
-# PostgreSQL数据库连接配置，type=postgresql时生效
+# PostgreSQL database connection configuration, takes effect when type=postgresql
 postgresql:
-  host: "127.0.0.1" # PG数据库地址
-  port: "5432" # PG默认端口5432
-  user: "" # PG登录用户名
-  password: "" # PG登录密码
-  dbname: "postgres" # 默认连接数据库名
-  sslmode: "disable" # SSL加密模式：disable关闭/require强制开启/verify-ca校验CA证书/verify-full完整校验证书
-  time-zone: "Asia/Shanghai" # PG连接会话时区，上海东八区
+  host: "127.0.0.1" # PG database address
+  port: "5432" # PG default port 5432
+  user: "" # PG login username
+  password: "" # PG login password
+  dbname: "postgres" # Default database name
+  sslmode: "disable" # SSL encryption mode: disable to turn off / require to force to turn on / verify-ca to verify CA certificate / verify-full to fully verify certificate
+  time-zone: "Asia/Shanghai" # PG connection session time zone, Shanghai East 8 zone
 
-# RustDesk核心服务地址配置
+# RustDesk core service address configuration
 rustdesk:
-  id-server: "183.24.70.210:21116" # 自建ID服务器地址端口，客户端连接用
-  relay-server: "183.24.70.210:21117" # 自建中继转发服务器地址端口
-  api-server: "https://183.24.70.210:21120" # 本API服务自身访问地址
-  key: "yJ0zQ1ETilzNC02PeFttuPl5x5EfA4WN5fAFh0YVzPQ=" # Ed25519加密公钥字符串，二选一配置key/key-file
-  key-file: "" # Ed25519公钥文件路径，优先级高于key字段
-  personal: 1 # 个人地址薄模式开关 1关闭，开启只能用个人地址薄
-  webclient-magic-queryonline: 1 # 网页客户端在线状态查询优化开关，0关闭1开启
-  ws-host: ""  # WebSocket自定义地址，示例：wss://192.168.1.3:4443，空则自动使用默认地址
+  id-server: "183.24.70.210:21116" # Self-built ID server address and port, used for client connection
+  relay-server: "183.24.70.210:21117" # Self-built relay forwarding server address and port
+  api-server: "https://183.24.70.210:21120" # This API service's own access address
+  key: "yJ0zQ1ETilzNC02PeFttuPl5x5EfA4WN5fAFh0YVzPQ=" # Ed25519 encrypted public key string, choose one of the following configuration options: key/key-file
+  key-file: "" # Path to the Ed25519 public key file, which has higher priority than the key field.
+  personal: 1 # Personal Address Book Mode Switch 1 Off, On: Only personal address book can be used
+  webclient-magic-queryonline: 1 # Web client online status query optimization switch, 0 off, 1 on
+  ws-host: ""  # Custom WebSocket address, example: wss://192.168.1.3:4443, if empty, the default address will be used automatically.
 
-# 日志输出配置
+# Log output configuration
 logger:
-  path: "./runtime/log.txt" # 日志文件存储路径
-  level: "info" # 日志打印级别：trace最详细>debug>info>warn>error>fatal仅致命错误
-  report-caller: true # 是否打印日志调用代码行号、文件名称，true开启方便排错
+  path: "./runtime/log.txt" # Log file storage path
+  level: "info" # Log printing levels: trace (most verbose) > debug > info > warn > error > fatal (fatal errors only)
+  report-caller: true # Whether to print the line number and file name of the called code in the log. Enabled with true, it facilitates debugging.
 
-# 全局网络代理配置
+# Global network proxy configuration
 proxy:
-  enable: false # 是否开启全局代理访问外网
-  host: "http://127.0.0.1:1080" # 代理服务地址，http/socks代理均可
+  enable: false # Enable global proxy access to the external network?
+  host: "http://127.0.0.1:1080" # Proxy service address, either HTTP or SOCKS proxy is acceptable.
 
-# JWT登录鉴权配置
+# JWT Login Authentication Configuration
 jwt:
-  key: "" # JWT签名密钥，必须自定义复杂字符串保证安全
-  expire-duration: 168h # JWT令牌过期时长，同token-expire统一7天
+  key: "5YPnK3NDchxAHuB6r8BpyEtFbvQcCyMUFupcKzxRsDxDurkc" # JWT signing key must be a custom, complex string to ensure security.
+  expire-duration: 168h # JWT token expiration time is the same as token-expire, 7 days.
 
-# 跨域访问配置（CORS）
+# Cross-Origin Access Configuration (CORS)
 cors:
-  # 允许跨域访问的源白名单（YAML 列表）。仅命中列表的 Origin 才会被反射并返回凭据头。
-  # 例如：["https://admin.example.com", "https://app.example.com"]
-  # 留空（[]）表示关闭跨域：任何跨域请求都不会得到 Access-Control-Allow-Origin，浏览器将拦截响应。
-  # 注意：此处仅控制响应头，不会影响同源的管理后台/WebClient（同源请求不需要 CORS）。
+# Whitelist of allowed cross-origin requests (YAML list). Only Origins that match the list will be reflected and have their credentials headers returned.
+# For example: ["https://admin.example.com", "https://app.example.com"]
+# Leaving it blank ([]) disables cross-origin requests: Any cross-origin request will not receive Access-Control-Allow-Origin, and the browser will block the response.
+# Note: This only controls the response headers and will not affect same-origin admin backends/WebClients (same-origin requests do not require CORS).
   allow-origins: []
 
-# TOTP 校验时钟容差（时钟漂移周期数，每个周期 30s；Skew=N 即容忍 ±30s×N）。
-# 标准库默认 Skew=1（±30s）。运维中服务器/客户端时钟偏差或用户输入耗时偶发会踩线失败，
-# 这里默认 3（±90s）作为健壮性加固。取值 <1（含未配置/0）时由 service 回退到 3。
-# 若“始终”校验失败，应优先排查 mfa_secret 是否正确落库与时间是否同步，而非无限制放宽。
+# Code payment configuration (self-implemented, no external platform dependency)
+payment:
+  enable: false # Enable code payment?
+  secret_key: "5YPnK3NDchxAHuB6r8BpyEtFbvQcCyMUFupcKzxRsDxDurkc" # Signature key (used for signature verification in callback notifications)
+  notify_url: "https://183.24.70.210:21120/api/subscribe/notify" # Callback address
+  order_expire_sec: 600 # Orders will be automatically closed if not paid (in seconds)
+
+  # Cashier Display
+  cashier:
+    site_name: "RustDesk Subscription"
+    alipay_qr: "static/qr/test2.jpg" # Alipay QR code
+    wechat_qr: "static/qr/test.jpg" # WeChat payment code
+    monitor_tip: "After scanning the QR code to pay, wait a few seconds, and the system will automatically detect the account and activate the subscription."
+
+# Subscription Package Configuration
+subscription:
+  plan: "pro"
+  plans:
+    - key: "1m"
+      name: "1 month"
+      price_cents: 1000
+      period_days: 30
+    - key: "3m"
+      name: "3 months"
+      price_cents: 2800
+      period_days: 90
+    - key: "6m"
+      name: "6 months"
+      price_cents: 5000
+      period_days: 180
+    - key: "12m"
+      name: "12 months"
+      price_cents: 8800
+      period_days: 365
+    - key: "forever"
+      name: "permanent"
+      price_cents: 18800
+      period_days: 36500
+  remind_days: [7, 3, 1] # Number of days until expiration (for front-end use)
+
+# Number of days for near-expiration reminder (for frontend use) av# TOTP clock tolerance (number of clock drift cycles, 30s per cycle; Skew=N, meaning tolerance ±30s×N).
+# The standard library defaults to Skew=1 (±30s). Occasionally, server/client clock deviations or user input latency may cause failures.
+# Here, a default of 3 (±90s) is used for robustness. Values ​​<1 (including unconfigured/0) will fall back to 3 by the service.
+# If the "always" check fails, priority should be given to checking whether mfa_secret is correctly stored in the database and whether the time is synchronized, rather than allowing unlimited tolerance.
 mfa_totp_skew: 3
 
-# LDAP域账号同步登录配置（AD/OpenLDAP）
+# Configure LDAP domain account synchronization login (AD/OpenLDAP)
 ldap:
-  enable: false # 是否启用LDAP单点登录，false关闭
-  url: "ldap://ldap.example.com:389" # LDAP服务连接地址，389默认非加密，636为ldaps加密端口
-  tls-ca-file: "" # LDAP TLS加密CA证书文件路径
-  tls-verify: false # TLS连接时是否校验证书合法性
-  base-dn: "dc=example,dc=com" # LDAP根域DN
-  bind-dn: "cn=admin,dc=example,dc=com" # LDAP管理员绑定账号DN，用于查询用户
-  bind-password: "password" # LDAP管理员账号密码
+  enable: false # Enable LDAP single sign-on, false disables it.
+  url: "ldap://ldap.example.com:389" # LDAP service connection address, 389 is unencrypted by default, 636 is the LDAP encrypted port.
+  tls-ca-file: "" # LDAP TLS Encrypted CA Certificate File Path
+  tls-verify: false # Should certificate validity be verified during TLS connection?
+  base-dn: "dc=example,dc=com" #LDAP root domain DN
+  bind-dn: "cn=admin,dc=example,dc=com" # LDAP administrator binds account DN for querying users.
+  bind-password: "password" # LDAP administrator account password
   user:
-    base-dn: "ou=users,dc=example,dc=com" # 用户数据所在组织单元DN
-    enable-attr: ""       # 用户启用状态属性名；AD环境填userAccountControl，空代表所有用户默认启用
-    enable-attr-value: "" # 用户启用状态对应属性值；AD环境无需填写会自动忽略
-    filter: "(cn=*)" # LDAP用户查询过滤条件，匹配所有cn用户
-    username: "uid"       # 登录账号对应LDAP属性；Windows AD需改为sAMAccountName
-    email: "mail" # 用户邮箱对应的LDAP字段名
-    first-name: "givenName" # 用户名字段
-    last-name: "sn" # 用户姓氏字段
-    sync: false         # 用户同步逻辑：true登录时同步用户到数据库；false仅创建时同步
-    admin-group: "cn=admin,dc=example,dc=com" # 管理员用户组DN，组内成员登录后拥有后台管理员权限
-    allow-group: "cn=users,dc=example,dc=com" # 允许登录的普通用户组DN，仅该组内账号可登录系统
+    base-dn: "ou=users,dc=example,dc=com" # Organizational Unit (DN) where user data is located
+    enable-attr: "" # User enabled status attribute name; in AD environment, enter userAccountControl, leaving it blank means all users are enabled by default.
+    enable-attr-value: "" # User activation status corresponding attribute value; AD environment does not need to be filled in and will be automatically ignored.
+    filter: "(cn=*)" # LDAP user query filter conditions, matching all .cn users
+    username: "uid" # Login account corresponds to LDAP attribute; Windows AD needs to be changed to sAMAccountName
+    email: "mail" # LDAP field name corresponding to the user's email address
+    first-name: "givenName" # Username field
+    last-name: "sn" # User's last name field
+    sync: false # User synchronization logic: true: Synchronize user data to the database upon login; false: Synchronize only upon user creation.
+    admin-group: "cn=admin,dc=example,dc=com" # Administrator user group DN, members of this group have backend administrator privileges after logging in.
+    allow-group: "cn=users,dc=example,dc=com" # Allowed user group IDs to log in; only accounts within this group can log in to the system.
 
-# 服务超时与可选 TLS（安全加固）
-# 默认走明文 HTTP；生产环境推荐由前置反向代理(nginx 等)做 TLS 终止，本服务只监听内网端口。
+# Service Timeout and Optional TLS (Security Hardening)
+# Default is plaintext HTTP; in production environments, it is recommended to use a front-end reverse proxy (nginx, etc.) for TLS termination. This service only listens on internal network ports.
 server:
-  # 读超时(秒)：读取整个请求(含 body)的时限，防慢速攻击。默认 15
+  # Read Timeout (seconds): The time limit for reading the entire request (including the body), preventing slow attack attacks. Default: 15
   read-timeout: 15
-  # 写超时(秒)：写入响应的时限。默认 30
+  # Write Timeout (seconds): The time limit for writing the response. Default is 30.
   write-timeout: 30
-  # 空闲超时(秒)：keep-alive 空闲连接的最大存活时间。默认 120
+  # Idle Timeout (seconds): The maximum lifespan of a keep-alive idle connection. Default: 120
   idle-timeout: 120
-  # 可选：直接由 api-server 启用 HTTPS（需自备证书）。默认关闭。
+  # Optional: Enable HTTPS directly through the api-server (requires your own certificate). Disabled by default.
   tls:
     enabled: false
-    cert-file: ""   # 例如 /path/to/fullchain.pem
-    key-file: ""    # 例如 /path/to/privkey.pem
-  # ---- 以下为“TLS 反向代理”落地建议（纯注释，不改逻辑）----
-  # 若由 nginx 做 TLS 终止并反代到本服务(假设本服务监听 127.0.0.1:21114)：
+    cert-file: "" # For example, /path/to/fullchain.pem
+    key-file: "" # For example, /path/to/privkey.pem
+  # ---- The following are suggestions for implementing "TLS reverse proxy" (pure comments, no changes to the logic) ----
+  # If nginx performs TLS termination and reverse proxy to this service (assuming this service listens on 127.0.0.1:21114):
   # server {
-  #     listen 443 ssl http2;
-  #     server_name api.example.com;
-  #     ssl_certificate     /etc/nginx/ssl/fullchain.pem;
-  #     ssl_certificate_key /etc/nginx/ssl/privkey.pem;
-  #     # HSTS：强制浏览器仅用 HTTPS 访问
-  #     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-  #     location / {
-  #         proxy_pass http://127.0.0.1:21114;
-  #         proxy_set_header Host              $host;
-  #         proxy_set_header X-Real-IP         $remote_addr;
-  #         proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-  #         proxy_set_header X-Forwarded-Proto $scheme;
+  #   listen 443 ssl http2;
+  #   server_name api.example.com;
+  #   ssl_certificate /etc/nginx/ssl/fullchain.pem;
+  #   ssl_certificate_key /etc/nginx/ssl/privkey.pem;
+  #   # HSTS: Force browsers to access only via HTTPS
+  #   add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+  #   location / {
+  #     proxy_pass http://127.0.0.1:21114;
+  #     proxy_set_header Host $host;
+  #     proxy_set_header X-Real-IP $remote_addr;
+  #     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  #     proxy_set_header X-Forwarded-Proto $scheme;
   #     }
   # }

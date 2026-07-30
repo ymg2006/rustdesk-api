@@ -1,14 +1,14 @@
 package model
 
 import (
-	"github.com/lejianwen/rustdesk-api/v2/model/custom_types"
+	"github.com/ymg2006/rustdesk-api/v2/model/custom_types"
 )
 
 type StatusCode int
 
 const (
-	COMMON_STATUS_ENABLE   StatusCode = 1 //通用状态 启用
-	COMMON_STATUS_DISABLED StatusCode = 2 //通用状态 禁用
+	COMMON_STATUS_ENABLE   StatusCode = 1 //General status enabled
+	COMMON_STATUS_DISABLED StatusCode = 2 //General status disabled
 )
 
 type IdModel struct {

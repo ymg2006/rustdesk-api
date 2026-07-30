@@ -2,36 +2,39 @@ package main
 
 import (
 	"fmt"
+	"io"
 	nethttp "net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/lejianwen/rustdesk-api/v2/config"
-	"github.com/lejianwen/rustdesk-api/v2/global"
-	"github.com/lejianwen/rustdesk-api/v2/http"
-	"github.com/lejianwen/rustdesk-api/v2/lib/cache"
-	"github.com/lejianwen/rustdesk-api/v2/lib/jwt"
-	"github.com/lejianwen/rustdesk-api/v2/lib/lock"
-	"github.com/lejianwen/rustdesk-api/v2/lib/logger"
-	"github.com/lejianwen/rustdesk-api/v2/lib/orm"
-	"github.com/lejianwen/rustdesk-api/v2/lib/upload"
-	"github.com/lejianwen/rustdesk-api/v2/model"
-	"github.com/lejianwen/rustdesk-api/v2/service"
-	"github.com/lejianwen/rustdesk-api/v2/utils"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/ymg2006/rustdesk-api/v2/config"
+	"github.com/ymg2006/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/http"
+	"github.com/ymg2006/rustdesk-api/v2/lib/cache"
+	"github.com/ymg2006/rustdesk-api/v2/lib/jwt"
+	"github.com/ymg2006/rustdesk-api/v2/lib/lock"
+	"github.com/ymg2006/rustdesk-api/v2/lib/logger"
+	"github.com/ymg2006/rustdesk-api/v2/lib/orm"
+	"github.com/ymg2006/rustdesk-api/v2/lib/upload"
+	"github.com/ymg2006/rustdesk-api/v2/model"
+	"github.com/ymg2006/rustdesk-api/v2/service"
+	"github.com/ymg2006/rustdesk-api/v2/utils"
 	"gorm.io/gorm"
 )
 
 const DatabaseVersion = 265
 
-// @title 管理系统API
+// @title Admin System API
 // @version 1.0
-// @description 接口
+// @description API endpoints
 // @basePath /api
 // @securityDefinitions.apikey token
 // @in header
@@ -49,9 +52,9 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		global.Logger.Info("API SERVER START")
 		http.ApiInit()
-		// 后台定时清理孤儿连接审计记录
+		// Periodically clean up orphaned connection audit records in the background.
 		go service.AllService.AuditService.StartStaleConnCloseSweep()
-		// 基于心跳 conns 的快速连接心跳检测（60s 超时），检测异常断开
+		// Fast connection heartbeat checks based on conns heartbeats (60s timeout) to detect abnormal disconnects.
 		go service.AllService.AuditService.StartConnHeartbeatSweep()
 	},
 }
@@ -119,23 +122,23 @@ func main() {
 }
 
 func InitGlobal() {
-	//配置解析
+	// Parse configuration.
 	global.Viper = config.Init(&global.Config, global.ConfigPath)
 
-	//日志
+	// Initialize logger.
 	global.Logger = logger.New(&logger.Config{
 		Path:         global.Config.Logger.Path,
 		Level:        global.Config.Logger.Level,
 		ReportCaller: global.Config.Logger.ReportCaller,
 	})
 
-	// 启动早期（配置已加载、日志已就绪，HTTP 服务尚未启动）打印时钟快照，
-	// 用于主动发现服务器时钟漂移——这正是此前 MFA 校验偶发失败的根因环境。
+	// Print a clock snapshot early during startup (configuration and logging are ready, HTTP is not started yet).
+	// This proactively detects server clock drift, which was the root environment cause of intermittent MFA failures.
 	logClockSnapshot()
 
 	global.InitI18n()
 
-	//cache（按需初始化 Redis，避免闲置占用资源）
+	// Initialize cache. Redis is initialized only when needed to avoid idle resource usage.
 	if global.Config.Cache.Type == cache.TypeFile {
 		fc := cache.NewFileCache()
 		fc.SetDir(global.Config.Cache.FileDir)
@@ -207,12 +210,12 @@ func InitGlobal() {
 	//jwt
 	//fmt.Println(global.Config.Jwt.PrivateKey)
 	global.Jwt = jwt.NewJwt(global.Config.Jwt.Key, global.Config.Jwt.ExpireDuration)
-	// SECURITY: JWT 签名密钥为空时，MFA 令牌生成会静默返回空串，
-	// 导致前端 MFA 流程无法完成（mfa_token="" 触发 "MFA令牌为必填字段" 错误）。
-	// 此处启动时即拦截，避免运行时才暴露问题。
+	// SECURITY: When the JWT signing key is empty, MFA token generation silently returns an empty string.
+	// That breaks the frontend MFA flow because mfa_token="" triggers the required-field validation error.
+	// Fail fast during startup instead of exposing the problem at runtime.
 	if len(global.Jwt.Key) == 0 {
-		global.Logger.Fatalf("[SECURITY] jwt.key 为空！请在 conf/config.yaml 中配置 jwt.key（建议 openssl rand -hex 生成）。" +
-			"jwt.key 为空会导致 MFA 多因素认证流程完全不可用。")
+		global.Logger.Fatalf("[SECURITY] jwt.key is empty. Please configure jwt.key in conf/config.yaml (openssl rand -hex is recommended)." +
+			"An empty jwt.key makes the MFA flow completely unavailable.")
 	}
 	//locker
 	global.Lock = lock.NewLocal()
@@ -221,6 +224,7 @@ func InitGlobal() {
 	service.New(&global.Config, global.DB, global.Logger, global.Jwt, global.Lock)
 	service.AllService.ProcessMonitorService = &service.ProcessMonitorService{}
 	service.AllService.ServerStatusService = &service.ServerStatusService{}
+	DatabaseAutoUpdate()
 	service.AllService.AlertService.StartChecker()
 
 	global.LoginLimiter = utils.NewLoginLimiter(utils.SecurityPolicy{
@@ -230,58 +234,111 @@ func InitGlobal() {
 		BanDuration:      banDurationDuration(),
 	})
 	global.LoginLimiter.RegisterProvider(utils.B64StringCaptchaProvider{})
-	DatabaseAutoUpdate()
+	syncQRImages()
 }
 
-// defaultClockCheckURL 启动时时钟快照使用的参考时间源。
-// 该站点会在响应头返回标准 RFC1123 的 Date 字段，作为"权威参考时间"。
-// 在无外网环境（本地/CI）取不到时间时，会优雅跳过，绝不影响启动。
+// syncQRImages copies configured payment QR images from absolute paths into resources/static/qr/.
+// This allows URLs built by getQRURL, such as /static/qr/{filename}, to access the files correctly.
+func syncQRImages() {
+	if global.Config.Payment.Cashier.SiteName == "" {
+		return
+	}
+	qrDir := global.Config.Gin.ResourcesPath + "/static/qr"
+	if err := os.MkdirAll(qrDir, 0755); err != nil {
+		global.Logger.Errorf("failed to create payment QR directory: %v", err)
+		return
+	}
+
+	cashier := global.Config.Payment.Cashier
+	paths := map[string]string{
+		"Alipay QR code": cashier.AlipayQR,
+		"WeChat QR code": cashier.WechatQR,
+	}
+	for name, src := range paths {
+		if src == "" || strings.HasPrefix(src, "http") {
+			continue
+		}
+		if !filepath.IsAbs(src) {
+			continue
+		}
+		dst := qrDir + "/" + filepath.Base(src)
+		if err := copyFile(src, dst); err != nil {
+			global.Logger.Errorf("failed to copy %s image %s -> %s: %v", name, src, dst, err)
+		} else {
+			global.Logger.Infof("payment QR image copied: %s -> %s", name, dst)
+		}
+	}
+}
+
+// copyFile copies a file.
+func copyFile(src, dst string) error {
+	s, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+
+	d, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+
+	if _, err := io.Copy(d, s); err != nil {
+		return err
+	}
+	return d.Sync()
+}
+
+// defaultClockCheckURL is the reference time source used by the startup clock snapshot.
+// This site returns a standard RFC1123 Date header that is used as the reference time.
+// If the time cannot be fetched in offline environments (local/CI), the check is skipped gracefully without affecting startup.
 const defaultClockCheckURL = "https://www.tencent.com"
 
-// logClockSnapshot 启动时打印一条时钟快照 INFO 日志：本地 UTC 时间 vs 参考时间（HTTP Date 头）及偏移。
-// 用于主动发现服务器时钟漂移——这正是此前 MFA 校验偶发失败的潜在根因环境。
+// logClockSnapshot prints one INFO-level startup clock snapshot: local UTC time vs reference time (HTTP Date header) and offset.
+// This proactively detects server clock drift, which was the likely root environment cause of intermittent MFA failures.
 //
-// 健壮性约束（务必满足）：
-//   - 单次网络请求超时硬上限 3s，避免无外网时拖慢启动；
-//   - 任何网络错误/超时/无 Date 头/解析失败，均仅 Warn 跳过，绝不 panic、绝不阻塞启动；
-//   - 若 global.Logger 尚未就绪，退化为独立的 logrus 实例，保证日志本身不崩溃。
+// Robustness requirements:
+//   - hard timeout of 3s per network request to avoid slow startup when there is no internet access;
+//   - network errors, timeouts, missing Date headers, and parse failures are warned and skipped only;
+//   - if global.Logger is not ready yet, fall back to a standalone logrus instance so logging itself never panics.
 func logClockSnapshot() {
 	lg := global.Logger
 	if lg == nil {
-		// 兜底：理论上 InitGlobal 已初始化 Logger；此处仅防极端时序，确保时钟快照永不 panic。
+		// Fallback: InitGlobal should already have initialized Logger; this only handles extreme timing cases.
 		lg = logrus.New()
 	}
 
 	client := &nethttp.Client{Timeout: 3 * time.Second}
 	resp, err := client.Get(defaultClockCheckURL)
 	if err != nil {
-		lg.Warnf("[CLOCK] 跳过时钟快照：无法连接参考时间源 %s: %v", defaultClockCheckURL, err)
+		lg.Warnf("[CLOCK] skipping clock snapshot: failed to connect to reference time source %s: %v", defaultClockCheckURL, err)
 		return
 	}
 	defer resp.Body.Close()
 
 	dateStr := resp.Header.Get("Date")
 	if dateStr == "" {
-		lg.Warnf("[CLOCK] 跳过时钟快照：参考时间源 %s 未返回 Date 响应头", defaultClockCheckURL)
+		lg.Warnf("[CLOCK] skipping clock snapshot: reference time source %s did not return a Date header", defaultClockCheckURL)
 		return
 	}
 	refTime, err := time.Parse(time.RFC1123, dateStr)
 	if err != nil {
-		lg.Warnf("[CLOCK] 跳过时钟快照：解析 Date 头失败 %q: %v", dateStr, err)
+		lg.Warnf("[CLOCK] skipping clock snapshot: failed to parse Date header %q: %v", dateStr, err)
 		return
 	}
 
-	// 统一换算到 UTC 比较，消除本地时区差异；offsetMs 带符号：
-	// 正数表示本机时钟"快于"参考时间，负数表示"慢于"参考时间。
+	// Convert both values to UTC for comparison to eliminate local timezone differences.
+	// offsetMs is signed: positive means the local clock is ahead of the reference time, negative means it is behind.
 	local := time.Now().UTC()
 	offsetMs := local.Sub(refTime).Milliseconds()
 	lg.Infof("[CLOCK] local=%s ref=%s offsetMs=%d",
 		local.Format(time.RFC3339), refTime.Format(time.RFC3339), offsetMs)
 }
 
-// isValidDatabaseName 校验数据库名格式（MySQL 标识符限制）：
-// 仅允许字母/数字/下划线，且必须以字母或下划线开头，长度不超过 64。
-// 用于 CREATE DATABASE 前的纵深防御，避免库名被污染时产生 SQL 注入。
+// isValidDatabaseName validates database names using MySQL identifier constraints.
+// Only letters, digits, and underscores are allowed; the name must start with a letter or underscore and be at most 64 bytes.
+// This is defense-in-depth before CREATE DATABASE to avoid SQL injection if the database name is polluted.
 func isValidDatabaseName(name string) bool {
 	if name == "" || len(name) > 64 {
 		return false
@@ -293,7 +350,7 @@ func isValidDatabaseName(name string) bool {
 	return matched
 }
 
-// banWindowDuration 返回登录失败计数的滑动窗口（分钟），缺失或非法(<=0)时回退默认 15 分钟。
+// banWindowDuration returns the sliding window for failed login counting. Missing or invalid values (<=0) fall back to 15 minutes.
 func banWindowDuration() time.Duration {
 	m := global.Config.App.BanWindowMinutes
 	if m <= 0 {
@@ -302,7 +359,7 @@ func banWindowDuration() time.Duration {
 	return time.Duration(m) * time.Minute
 }
 
-// banDurationDuration 返回触发封禁后的封禁时长（分钟），缺失或非法(<=0)时回退默认 30 分钟。
+// banDurationDuration returns the ban duration after the threshold is reached. Missing or invalid values (<=0) fall back to 30 minutes.
 func banDurationDuration() time.Duration {
 	m := global.Config.App.BanDurationMinutes
 	if m <= 0 {
@@ -317,11 +374,11 @@ func DatabaseAutoUpdate() {
 	db := global.DB
 
 	if global.Config.Gorm.Type == config.TypeMysql {
-		//检查存不存在数据库，不存在则创建
+		// Check whether the database exists and create it if it does not.
 		dbName := db.Migrator().CurrentDatabase()
 		if dbName == "" {
 			dbName = global.Config.Mysql.Dbname
-			// 移除 DSN 中的数据库名称，以便初始连接时不指定数据库
+			// Remove the database name from the DSN so the initial connection does not select a database.
 			dsnWithoutDB := fmt.Sprintf("%s:%s@(%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 				global.Config.Mysql.Username,
 				global.Config.Mysql.Password,
@@ -329,26 +386,26 @@ func DatabaseAutoUpdate() {
 				"",
 			)
 
-			//新链接
+			// New connection without selecting a database.
 			dbWithoutDB := orm.NewMysql(&orm.MysqlConfig{
 				Dsn: dsnWithoutDB,
 			}, global.Logger)
-			// 获取底层的 *sql.DB 对象，并确保在程序退出时关闭连接
+			// Get the underlying *sql.DB object and ensure the connection is closed on exit.
 			sqlDBWithoutDB, err := dbWithoutDB.DB()
 			if err != nil {
-				global.Logger.Errorf("获取底层 *sql.DB 对象失败: %v", err)
+				global.Logger.Errorf("failed to get underlying *sql.DB object: %v", err)
 				return
 			}
 			defer func() {
 				if err := sqlDBWithoutDB.Close(); err != nil {
-					global.Logger.Errorf("关闭连接失败: %v", err)
+					global.Logger.Errorf("failed to close connection: %v", err)
 				}
 			}()
 
-			// 安全加固：执行 CREATE DATABASE 前校验库名格式，防止库名被污染时产生注入。
-			// 即便通过校验，也用反引号包裹标识符作为纵深防御。
+			// Security hardening: validate the database name before CREATE DATABASE to prevent injection if it is polluted.
+			// Even after validation, quote the identifier with backticks as defense-in-depth.
 			if !isValidDatabaseName(dbName) {
-				global.Logger.Errorf("数据库名格式非法，已拒绝执行 CREATE DATABASE: %q", dbName)
+				global.Logger.Errorf("invalid database name format; refused to execute CREATE DATABASE: %q", dbName)
 				return
 			}
 			err = dbWithoutDB.Exec("CREATE DATABASE IF NOT EXISTS `" + dbName + "` DEFAULT CHARSET utf8mb4").Error
@@ -362,20 +419,20 @@ func DatabaseAutoUpdate() {
 	if !db.Migrator().HasTable(&model.Version{}) {
 		Migrate(uint(version))
 	} else {
-		//查找最后一个version
+		// Find the latest version record.
 		var v model.Version
 		db.Last(&v)
 		if v.Version < uint(version) {
 			Migrate(uint(version))
 		}
 
-		// 245迁移
+		// Migration for version 245.
 		if v.Version < 245 {
-			//oauths 表的 oauth_type 字段设置为 op同样的值
+			// Set oauths.oauth_type to the same value as op.
 			db.Exec("update oauths set oauth_type = op")
 			db.Exec("update oauths set issuer = 'https://accounts.google.com' where op = 'google'")
 			db.Exec("update user_thirds set oauth_type = third_type, op = third_type")
-			//通过email迁移旧的google授权
+			// Migrate old Google authorization data through email.
 			uts := make([]model.UserThird, 0)
 			db.Where("oauth_type = ?", "google").Find(&uts)
 			for _, ut := range uts {
@@ -389,10 +446,10 @@ func DatabaseAutoUpdate() {
 		}
 	}
 
-	// 兜底迁移：确保所有新表都存在。AutoMigrate 是幂等的，
-	// 已存在的表/列不会被改动。修复旧版本升级时因 version 记录
-	// 已是最新而跳过 Migrate，导致新增表（如 app_releases/station_messages）缺失的问题。
-	// 对每个模型单独 AutoMigrate，避免一个失败影响其他。
+	// Fallback migration: ensure all new tables exist. AutoMigrate is idempotent and does not modify existing tables/columns.
+	// This fixes upgrades from old versions where Migrate could be skipped because the version record was already current,
+	// leaving newly added tables such as app_releases or station_messages missing.
+	// AutoMigrate each model separately so one failure does not block the others.
 	fallbackModels := []interface{}{
 		&model.Version{},
 		&model.AppRelease{},
@@ -422,7 +479,9 @@ func DatabaseAutoUpdate() {
 		&model.ProcessMonitorRulePeer{},
 		&model.ProcessMonitorStatus{},
 		&model.ServerStatusMonitor{},
-		&model.Invitation{},
+		&model.PayOrder{},
+		&model.InviteCode{},
+		&model.Announcement{},
 	}
 	for _, m := range fallbackModels {
 		if err := db.AutoMigrate(m); err != nil {
@@ -430,7 +489,7 @@ func DatabaseAutoUpdate() {
 		}
 	}
 
-	// 终极兜底：用原生 SQL 确保关键表存在（应对 AutoMigrate 可能因 GORM 版本差异失败的场景）
+	// Final fallback: use raw SQL to ensure critical tables exist when AutoMigrate fails due to GORM version differences.
 	ensureTable(db, &model.AppRelease{}, "app_releases", `CREATE TABLE IF NOT EXISTS app_releases (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		version varchar(32) NOT NULL DEFAULT '',
@@ -467,11 +526,11 @@ func DatabaseAutoUpdate() {
 
 func ensureTable(db *gorm.DB, m interface{}, tableName, createSQL string) {
 	if !db.Migrator().HasTable(m) {
-		global.Logger.Warnf("表 %s 不存在，尝试用原生 SQL 创建...", tableName)
+		global.Logger.Warnf("table %s does not exist; trying to create it with raw SQL...", tableName)
 		if err := db.Exec(createSQL).Error; err != nil {
-			global.Logger.Errorf("原生 SQL 创建表 %s 失败: %v", tableName, err)
+			global.Logger.Errorf("failed to create table %s with raw SQL: %v", tableName, err)
 		} else {
-			global.Logger.Infof("原生 SQL 创建表 %s 成功", tableName)
+			global.Logger.Infof("created table %s with raw SQL successfully", tableName)
 		}
 	}
 }
@@ -506,13 +565,14 @@ func Migrate(version uint) {
 		&model.ProcessMonitorRulePeer{},
 		&model.ProcessMonitorStatus{},
 		&model.ServerStatusMonitor{},
-		&model.Invitation{},
+		&model.PayOrder{},
+		&model.InviteCode{},
 	)
 	if err != nil {
 		global.Logger.Error("migrate err :=>", err)
 	}
 	global.DB.Create(&model.Version{Version: version})
-	//如果是初次则创建一个默认用户
+	// Create a default user on first initialization.
 	var vc int64
 	global.DB.Model(&model.Version{}).Count(&vc)
 	if vc == 1 {
@@ -534,7 +594,7 @@ func Migrate(version uint) {
 			Type: model.GroupTypeShare,
 		}
 		service.AllService.GroupService.Create(groupShare)
-		//是true
+		// Set admin flag.
 		is_admin := true
 		admin := &model.User{
 			Username: "admin",
@@ -544,11 +604,11 @@ func Migrate(version uint) {
 			GroupId:  1,
 		}
 
-		// 生成随机密码
+		// Generate a random password.
 		pwd := utils.RandomString(8)
-		// SECURITY: 初始 admin 密码属于高敏感凭据，绝不能写入文件日志（./runtime/log.txt），
-		// 否则任何能读取日志文件的人都能拿到管理员密码。这里仅一次性打印到 stderr（控制台，
-		// 不会持久化到日志文件），并提示操作员首次登录后立即修改。
+		// SECURITY: The initial admin password is a highly sensitive credential and must never be written to file logs (./runtime/log.txt).
+		// Otherwise, anyone who can read the log file could obtain the admin password. Print it once to stderr (console) only,
+		// without persisting it to log files, and prompt the operator to change it after the first login.
 		fmt.Fprintf(os.Stderr, "\n[INIT] Generated initial admin password: %s\n[INIT] Please change it after first login!\n\n", pwd)
 		var err error
 		admin.Password, err = utils.EncryptPassword(pwd)

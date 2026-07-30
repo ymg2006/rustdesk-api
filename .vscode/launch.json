@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+      {
+          "name": "Debug rustdesk-api",
+          "type": "go",
+          "request": "launch",
+          "mode": "debug",
+          "program": "${workspaceFolder}/cmd/apimain.go",
+          "cwd": "${workspaceFolder}",
+          "args": [
+              "--config",
+              "${workspaceFolder}/conf/config.yaml"
+          ],
+          "env": {
+              "CGO_ENABLED": "0"
+          },
+          "showLog": true
+      }
+  ]
+}

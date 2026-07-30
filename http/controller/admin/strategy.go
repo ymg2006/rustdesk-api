@@ -2,9 +2,9 @@ package admin
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/http/response"
-	"github.com/lejianwen/rustdesk-api/v2/model"
-	"github.com/lejianwen/rustdesk-api/v2/service"
+	"github.com/ymg2006/rustdesk-api/v2/http/response"
+	"github.com/ymg2006/rustdesk-api/v2/model"
+	"github.com/ymg2006/rustdesk-api/v2/service"
 	"strconv"
 )
 
@@ -29,15 +29,15 @@ func (ct *Strategy) List(c *gin.Context) {
 func (ct *Strategy) Create(c *gin.Context) {
 	f := &model.Strategy{}
 	if err := c.ShouldBindJSON(f); err != nil {
-		response.Fail(c, 101, "参数错误"+err.Error())
+		response.Fail(c, 101, response.TranslateMsg(c, "ParamError")+err.Error())
 		return
 	}
 	if f.Name == "" {
-		response.Fail(c, 101, "策略名称不能为空")
+		response.Fail(c, 101, "Policy name cannot be empty")
 		return
 	}
 	if err := service.AllService.StrategyService.Create(f); err != nil {
-		response.Fail(c, 101, "创建失败: "+err.Error())
+		response.Fail(c, 101, "Creation failed:"+err.Error())
 		return
 	}
 	response.Success(c, nil)
@@ -46,15 +46,15 @@ func (ct *Strategy) Create(c *gin.Context) {
 func (ct *Strategy) Update(c *gin.Context) {
 	f := &model.Strategy{}
 	if err := c.ShouldBindJSON(f); err != nil {
-		response.Fail(c, 101, "参数错误"+err.Error())
+		response.Fail(c, 101, response.TranslateMsg(c, "ParamError")+err.Error())
 		return
 	}
 	if f.Id == 0 {
-		response.Fail(c, 101, "ID不能为空")
+		response.Fail(c, 101, response.TranslateMsg(c, "IdRequired"))
 		return
 	}
 	if err := service.AllService.StrategyService.Update(f); err != nil {
-		response.Fail(c, 101, "更新失败: "+err.Error())
+		response.Fail(c, 101, "Update failed:"+err.Error())
 		return
 	}
 	response.Success(c, nil)
@@ -65,16 +65,16 @@ func (ct *Strategy) Delete(c *gin.Context) {
 		Id uint `json:"id"`
 	}{}
 	if err := c.ShouldBindJSON(form); err != nil || form.Id == 0 {
-		response.Fail(c, 101, "ID不能为空")
+		response.Fail(c, 101, response.TranslateMsg(c, "IdRequired"))
 		return
 	}
 	s := service.AllService.StrategyService.InfoById(form.Id)
 	if s.Id == 0 {
-		response.Fail(c, 101, "策略不存在")
+		response.Fail(c, 101, "Policy does not exist")
 		return
 	}
 	if err := service.AllService.StrategyService.Delete(s); err != nil {
-		response.Fail(c, 101, "删除失败: "+err.Error())
+		response.Fail(c, 101, "Delete failed:"+err.Error())
 		return
 	}
 	response.Success(c, nil)

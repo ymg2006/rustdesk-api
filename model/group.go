@@ -1,15 +1,15 @@
 package model
 
 const (
-	GroupTypeDefault = 1 // 默认
-	GroupTypeShare   = 2 // 共享
+	GroupTypeDefault = 1 // default
+	GroupTypeShare   = 2 // shared
 )
 
 type Group struct {
 	IdModel
 	Name     string `json:"name" gorm:"default:'';not null;"`
 	Type     int    `json:"type" gorm:"default:1;not null;"`
-	ParentId uint   `json:"parent_id" gorm:"default:0;not null;index;comment:上级部门ID，0为根部门"`
+	ParentId uint   `json:"parent_id" gorm:"default:0;not null;index;comment: Superior department ID, 0 is the root department"`
 	TimeModel
 }
 
@@ -18,7 +18,7 @@ type GroupList struct {
 	Pagination
 }
 
-// GroupTree 部门树节点，用于组织架构展示
+// GroupTree department tree node, used for organizational structure display
 type GroupTree struct {
 	*Group
 	Children  []*GroupTree `json:"children"`

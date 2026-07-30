@@ -1,11 +1,11 @@
 package service
 
 import (
-	"github.com/lejianwen/rustdesk-api/v2/config"
-	"github.com/lejianwen/rustdesk-api/v2/lib/jwt"
-	"github.com/lejianwen/rustdesk-api/v2/lib/lock"
-	"github.com/lejianwen/rustdesk-api/v2/model"
 	log "github.com/sirupsen/logrus"
+	"github.com/ymg2006/rustdesk-api/v2/config"
+	"github.com/ymg2006/rustdesk-api/v2/lib/jwt"
+	"github.com/ymg2006/rustdesk-api/v2/lib/lock"
+	"github.com/ymg2006/rustdesk-api/v2/model"
 	"gorm.io/gorm"
 )
 
@@ -32,6 +32,9 @@ type Service struct {
 	*StrategyService
 	*ProcessMonitorService
 	*ServerStatusService
+	*SubscribeService
+	*InviteCodeService
+	*AnnouncementService
 }
 
 type Dependencies struct {
@@ -57,6 +60,11 @@ func New(c *config.Config, g *gorm.DB, l *log.Logger, j *jwt.Jwt, lo lock.Locker
 	Jwt = j
 	Lock = lo
 	AllService = new(Service)
+	AllService.SubscribeService = NewSubscribeService()
+	AllService.InviteCodeService = NewInviteCodeService()
+	AllService.AnnouncementService = &AnnouncementService{}
+	// Migrate old data role field
+	AllService.MigrateUserRoles()
 	return AllService
 }
 

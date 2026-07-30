@@ -3,25 +3,25 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/lejianwen/rustdesk-api/v2/model"
+	"github.com/ymg2006/rustdesk-api/v2/model"
 	"time"
 )
 
-// peerNotifyRecord 每个 peer 的通知记录（用于 NotifiedPeers JSON 字段）
+// peerNotifyRecord Notification record for each peer (used in the NotifiedPeers JSON field)
 type peerNotifyRecord struct {
-	Count     int   `json:"c"` // 当天通知次数
-	LastTime  int64 `json:"t"` // 最后通知时间戳
-	Weight    int   `json:"w"` // 离线权重：每 5 分钟检测一次，离线则 +1
-	WeightDay int   `json:"d"` // 权重所属日期（YYYYMMDD），用于每日重置
+	Count     int   `json:"c"` // Number of notifications on the day
+	LastTime  int64 `json:"t"` // Last notification timestamp
+	Weight    int   `json:"w"` // Offline weight: Detected every 5 minutes, +1 if offline
+	WeightDay int   `json:"d"` // The date the weight belongs to (YYYYMMDD), used for daily reset
 }
 
-// parseNotifiedPeers 兼容解析新旧两种格式的 NotifiedPeers
+// parseNotifiedPeers is compatible with parsing NotifiedPeers in both old and new formats.
 func parseNotifiedPeers(data string) map[string]*peerNotifyRecord {
 	result := make(map[string]*peerNotifyRecord)
 	if data == "" {
 		return result
 	}
-	// 尝试新格式 map[string]*peerNotifyRecord
+	// Try new format map[string]*peerNotifyRecord
 	m := make(map[string]*peerNotifyRecord)
 	if err := json.Unmarshal([]byte(data), &m); err == nil {
 		for k, v := range m {
@@ -29,7 +29,7 @@ func parseNotifiedPeers(data string) map[string]*peerNotifyRecord {
 		}
 		return result
 	}
-	// 兼容旧格式 map[string]int64
+	// Compatible with old format map[string]int64
 	old := make(map[string]int64)
 	if err := json.Unmarshal([]byte(data), &old); err == nil {
 		for k, v := range old {
@@ -39,24 +39,24 @@ func parseNotifiedPeers(data string) map[string]*peerNotifyRecord {
 	return result
 }
 
-// isSameDay 判断两个时间戳是否在同一天（本地时间）
+// isSameDay determines whether two timestamps are on the same day (local time)
 func isSameDay(a, b int64) bool {
 	ta := time.Unix(a, 0)
 	tb := time.Unix(b, 0)
 	return ta.Year() == tb.Year() && ta.YearDay() == tb.YearDay()
 }
 
-// dayKey 返回本地日期的整数表示（YYYYMMDD），用于每日重置权重与连续天数计算
+// dayKey returns the integer representation of the local date (YYYYMMDD), used for daily reset weight and consecutive day calculations
 func dayKey(t int64) int {
 	tm := time.Unix(t, 0)
 	return tm.Year()*10000 + int(tm.Month())*100 + tm.Day()
 }
 
 const (
-	maxNotifyPerDay        = 3                // 同一设备每天最多通知次数
-	notifyCooldown         = 600              // 单个 peer 最短通知间隔（秒），避免短时间内重复触发
-	offlineWeightThreshold = 10               // 离线权重达到该值才触发告警（10 次 × 5 分钟 = 50 分钟）
-	checkInterval          = 5 * time.Minute // 离线检测间隔
+	maxNotifyPerDay        = 3               // Maximum number of notifications per day for the same device
+	notifyCooldown         = 600             // The minimum notification interval (seconds) of a single peer to avoid repeated triggering in a short period of time
+	offlineWeightThreshold = 10              // The alarm will only be triggered when the offline weight reaches this value (10 times × 5 minutes = 50 minutes)
+	checkInterval          = 5 * time.Minute // Offline detection interval
 )
 
 type AlertService struct{}
@@ -72,12 +72,12 @@ func (s *AlertService) StartChecker() {
 	Logger.Info("Alert checker started")
 }
 
-// getMonitoredPeerIds 返回该告警配置应监控的设备ID列表
-// MonitorAll=1: 监控该用户地址簿中所有设备
-// MonitorAll=2: 仅监控 alert_targets 中选中的设备或集合
+// getMonitoredPeerIds returns the list of device IDs that this alarm configuration should monitor.
+// MonitorAll=1: Monitor all devices in the user's address book
+// MonitorAll=2: Only monitor the devices or collections selected in alert_targets
 func (s *AlertService) getMonitoredPeerIds(cfg *model.AlertConfig) ([]string, bool) {
 	if cfg.MonitorAll == 1 {
-		// 用户自己的地址簿
+		// User's own address book
 		var abEntries []model.AddressBook
 
 		var ownColls []model.AddressBookCollection
@@ -87,7 +87,7 @@ func (s *AlertService) getMonitoredPeerIds(cfg *model.AlertConfig) ([]string, bo
 			ownCollIds = append(ownCollIds, col.Id)
 		}
 
-		// 他人分享给该用户的集合
+		// Collections shared by others with this user
 		user := &model.User{}
 		DB.First(user, cfg.UserId)
 		if user.Id > 0 {
@@ -153,7 +153,7 @@ func (s *AlertService) checkOfflineDevices() {
 	today := dayKey(now)
 	prevDay := dayKey(now - 86400)
 
-	// 按用户分组处理：每个用户的站内消息配置（若存在）
+	// Processing by user group: each user’s in-site message configuration (if it exists)
 	userStationCfg := make(map[uint]*model.AlertConfig)
 	for i := range configs {
 		if configs[i].Channel == "station" {
@@ -172,7 +172,7 @@ func (s *AlertService) checkOfflineDevices() {
 
 		peerIds, monitorAll := s.getMonitoredPeerIds(&cfg)
 
-		// 加载被监控设备的在线信息（排除距今超过 30 天未上线的设备）
+		// Load online information of monitored devices (excluding devices that have not been online for more than 30 days)
 		var peers []model.Peer
 		q := DB.Select("id, last_online_time, hostname, alias").
 			Where("last_online_time > ?", now-30*86400)
@@ -188,7 +188,7 @@ func (s *AlertService) checkOfflineDevices() {
 
 		notifiedMap := parseNotifiedPeers(cfg.NotifiedPeers)
 
-		// 重新上线检测：任意被监控设备近期上线，则重置“连续3天离线”限制
+		// Re-online detection: If any monitored device comes online recently, the "3 consecutive days offline" limit will be reset.
 		for _, peer := range peers {
 			if peer.LastOnlineTime > now-300 {
 				if cfg.ConsecutiveTriggerDays != 0 || cfg.LastTriggerDay != 0 {
@@ -199,7 +199,7 @@ func (s *AlertService) checkOfflineDevices() {
 			}
 		}
 
-		// 更新离线权重：每 5 分钟检测一次，离线则 +1；每日 / 上线重置
+		// Update offline weight: detected every 5 minutes, +1 if offline; reset daily/online
 		type candidate struct {
 			peer   model.Peer
 			weight int
@@ -210,21 +210,25 @@ func (s *AlertService) checkOfflineDevices() {
 			if !ok {
 				rec = &peerNotifyRecord{}
 			}
-			// 每日重置权重
+			// Daily weight reset
 			if rec.WeightDay != today {
 				rec.Weight = 0
 				rec.WeightDay = today
 			}
 			switch {
 			case peer.LastOnlineTime > now-300:
-				// 已上线：重置权重
+				// Already online: Reset weights
 				rec.Weight = 0
 				rec.WeightDay = today
 			case peer.LastOnlineTime < now-threshold:
-				// 离线（超过阈值时长）：权重 +1
+				// Offline (exceeds threshold time): Weight +1
+				// If the device is offline before the alarm is created, this offline event will be skipped (the history will not be traced).
+				if cfg.CreatedAt > 0 && peer.LastOnlineTime < cfg.CreatedAt {
+					break
+				}
 				rec.Weight++
 			default:
-				// 刚离线但尚未超过阈值：不计入权重
+				// Just offline but not yet exceeded the threshold: not counted in the weight
 				rec.Weight = 0
 				rec.WeightDay = today
 			}
@@ -234,7 +238,7 @@ func (s *AlertService) checkOfflineDevices() {
 			}
 		}
 
-		// 筛选可通知的设备（排除当天已达上限或冷却期内的）
+		// Filter the devices that can be notified (exclude those that have reached the upper limit or are within the cooling period on that day)
 		var alertPeers []candidate
 		for _, c := range candidates {
 			rec := notifiedMap[c.peer.Id]
@@ -247,7 +251,7 @@ func (s *AlertService) checkOfflineDevices() {
 			alertPeers = append(alertPeers, c)
 		}
 
-		// 连续 3 天以上触发则不再推送邮件告警
+		// If triggered for more than 3 consecutive days, no further email alerts will be sent.
 		if cfg.ConsecutiveTriggerDays >= 3 {
 			Logger.Infof("alert config %d: consecutive offline trigger days >= 3, skip email push", cfg.RowId)
 			s.persistAlertCfg(cfg.RowId, notifiedMap, cfg.LastNotifiedAt, cfg.ConsecutiveTriggerDays, cfg.LastTriggerDay)
@@ -271,19 +275,20 @@ func (s *AlertService) checkOfflineDevices() {
 				alias = hostname
 			}
 			lastOnline := time.Unix(peer.LastOnlineTime, 0).Format("2006-01-02 15:04:05")
-			title := "设备离线告警"
-			content := fmt.Sprintf("设备：%s\n别名：%s\nID：%s\n离线时长：%d 分钟\n最后在线：%s\n离线权重：%d",
-				hostname, alias, peer.Id, cfg.OfflineMin, lastOnline, c.weight)
+			title := "Device offline alarm"
+			offlineMinutes := (now - peer.LastOnlineTime) / 60
+			content := fmt.Sprintf("Device: %s\nAlias: %s\nID: %s\nOffline duration: %d minutes\nLast online: %s\nOffline weight: %d",
+				hostname, alias, peer.Id, offlineMinutes, lastOnline, c.weight)
 
-			// 发送外部渠道通知（邮件等）
+			// Send external channel notifications (email, etc.)
 			AllService.NotifyService.SendByConfig(&cfg, title, content)
 
-			// 该用户是否有站内消息配置？有则发站内消息
+			// Does this user have in-site message configuration? If there is any, send a message on the site
 			if stationCfg, ok := userStationCfg[cfg.UserId]; ok && stationCfg != nil {
 				AllService.NotifyService.SendStationMessage(cfg.UserId, title, content, peer.Id)
 			}
 
-			// 更新该 peer 的通知记录
+			// Update the peer's notification record
 			rec := notifiedMap[peer.Id]
 			if isSameDay(rec.LastTime, now) {
 				rec.Count++
@@ -296,18 +301,18 @@ func (s *AlertService) checkOfflineDevices() {
 			pushedAny = true
 		}
 
-		// 清理非今天的记录（以权重所属日期为准），避免 map 无限增长，
-		// 同时保留当天仍在累积权重的离线设备记录
+		// Clean up records that are not today (based on the date the weight belongs to) to avoid unlimited growth of the map.
+		// At the same time, records of offline devices that are still accumulating weights on that day are retained.
 		for k, v := range notifiedMap {
 			if v.WeightDay != today {
 				delete(notifiedMap, k)
 			}
 		}
 
-		// 更新连续触发天数（每个自然日只计一次）
+		// Update the number of consecutive trigger days (only counted once per calendar day)
 		if pushedAny {
 			if cfg.LastTriggerDay == today {
-				// 当日已统计，不重复累计
+				// Already counted on that day, no repeated accumulation
 			} else if cfg.LastTriggerDay == prevDay {
 				cfg.ConsecutiveTriggerDays++
 			} else {
@@ -320,7 +325,7 @@ func (s *AlertService) checkOfflineDevices() {
 	}
 }
 
-// persistAlertCfg 持久化告警配置的运行状态（通知记录、连续触发天数等）
+// persistAlertCfg persists the running status of the alarm configuration (notification records, number of consecutive trigger days, etc.)
 func (s *AlertService) persistAlertCfg(rowId uint, notifiedMap map[string]*peerNotifyRecord, lastNotifiedAt int64, consecutive int, lastTriggerDay int) {
 	encoded, _ := json.Marshal(notifiedMap)
 	DB.Model(&model.AlertConfig{}).Where("row_id = ?", rowId).Updates(map[string]interface{}{

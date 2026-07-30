@@ -240,3 +240,270 @@ other = "邀请码无效或已过期。"
 description = "User disabled."
 one = "用户已被禁用。"
 other = "用户已被禁用。"
+
+[ServerInternalError]
+description = "Internal server error."
+one = "服务器内部错误"
+other = "服务器内部错误"
+
+[ParamError]
+description = "Parameter error."
+one = "参数错误。"
+other = "参数错误。"
+
+[FieldRequired]
+description = "Field required."
+one = "{{.P0}} 不能为空。"
+other = "{{.P0}} 不能为空。"
+
+[ShareTokenRequired]
+description = "Share token required."
+one = "分享令牌不能为空。"
+other = "分享令牌不能为空。"
+
+[ShareNotFound]
+description = "Share not found."
+one = "分享不存在。"
+other = "分享不存在。"
+
+[ShareExpired]
+description = "Share expired."
+one = "分享已过期。"
+other = "分享已过期。"
+
+[PeerNotFound]
+description = "Peer not found."
+one = "设备不存在。"
+other = "设备不存在。"
+
+[PermissionDenied]
+description = "Permission denied."
+one = "权限不足。"
+other = "权限不足。"
+
+[MissingOutTradeNo]
+description = "Missing out_trade_no."
+one = "缺少 out_trade_no。"
+other = "缺少 out_trade_no。"
+
+[AuthorizationInProgress]
+description = "Authorization in progress."
+one = "授权进行中，请登录并绑定。"
+other = "授权进行中，请登录并绑定。"
+
+[NoAuthedOidcFound]
+description = "No authorized OIDC found."
+one = "未找到已授权的 OIDC 会话。"
+other = "未找到已授权的 OIDC 会话。"
+
+[Unauthorized]
+description = "Unauthorized."
+one = "未授权。"
+other = "未授权。"
+
+[InvalidRustdeskKey]
+description = "Invalid RustDesk key."
+one = "RustDesk 密钥无效。"
+other = "RustDesk 密钥无效。"
+
+[NameRequired]
+description = "Name required."
+one = "请输入名称。"
+other = "请输入名称。"
+
+[ChannelNameRequired]
+description = "Channel name required."
+one = "请输入通道名称。"
+other = "请输入通道名称。"
+
+[SaveFailed]
+description = "Save failed."
+one = "保存失败。"
+other = "保存失败。"
+
+[SendFailed]
+description = "Send failed."
+one = "发送失败。"
+other = "发送失败。"
+
+[RecordNotFound]
+description = "Record not found."
+one = "记录不存在。"
+other = "记录不存在。"
+
+[ChannelInUse]
+description = "Channel in use."
+one = "该通道正在被告警规则使用，无法删除。"
+other = "该通道正在被告警规则使用，无法删除。"
+
+[ChannelTypeMissing]
+description = "Channel type missing."
+one = "通道类型缺失。"
+other = "通道类型缺失。"
+
+[SelectNotifyChannel]
+description = "Select notification channel."
+one = "请选择通知通道。"
+other = "请选择通知通道。"
+
+[NotifyChannelNotFound]
+description = "Notification channel not found."
+one = "通知通道不存在。"
+other = "通知通道不存在。"
+
+[IdRequired]
+description = "ID 为必填项。"
+one = "ID不能为空。"
+other = "ID不能为空。"
+
+[VersionRequired]
+description = "Version required."
+one = "版本号不能为空。"
+other = "版本号不能为空。"
+
+[DownloadUrlRequired]
+description = "Download URL required."
+one = "下载链接不能为空。"
+other = "下载链接不能为空。"
+
+[VersionNotFound]
+description = "Version not found."
+one = "版本不存在。"
+other = "版本不存在。"
+
+[NameAndDownloadUrlRequired]
+description = "Name and download URL required."
+one = "名称和下载地址不能为空。"
+other = "名称和下载地址不能为空。"
+
+[AnnouncementNotFound]
+description = "未找到公告。"
+one = "公告不存在。"
+other = "公告不存在。"
+
+[TitleRequired]
+description = "标题为必填项。"
+
+[ContentRequired]
+description = "内容为必填项。"
+
+[InvalidAnnouncementStatus]
+description = "公告状态必须为 0 或 1。"
+one = "标题不能为空。"
+other = "标题不能为空。"
+
+[UnsupportedOnlineRestart]
+description = "Unsupported online restart."
+one = "当前平台不支持在线重启服务，请手动重启进程。"
+other = "当前平台不支持在线重启服务，请手动重启进程。"
+
+[ConfigPathUnknown]
+description = "Config path unknown."
+one = "配置文件路径未知。"
+other = "配置文件路径未知。"
+
+[ReadConfigFailed]
+description = "Read config failed."
+one = "读取配置文件失败。"
+other = "读取配置文件失败。"
+
+[WriteConfigFailed]
+description = "Write config failed."
+one = "写入配置文件失败。"
+other = "写入配置文件失败。"
+
+[ConfigFormatInvalid]
+description = "Invalid config format."
+one = "配置格式有误，请检查输入。"
+other = "配置格式有误，请检查输入。"
+
+[ConfigYamlInvalid]
+description = "Invalid YAML config."
+one = "配置格式错误（YAML 解析失败），请检查 YAML 语法。"
+other = "配置格式错误（YAML 解析失败），请检查 YAML 语法。"
+
+[UnsupportedDbType]
+description = "Unsupported database type."
+one = "不支持的数据库类型。"
+other = "不支持的数据库类型。"
+
+[ExportDbFailed]
+description = "Export database failed."
+one = "导出数据库失败。"
+other = "导出数据库失败。"
+
+[InvalidId]
+description = "Invalid ID."
+one = "ID无效。"
+other = "ID无效。"
+
+[SubscriptionExpired]
+description = "Subscription expired."
+one = "订阅已过期。"
+other = "订阅已过期。"
+
+[OrderNotFound]
+description = "Order not found."
+one = "订单不存在。"
+other = "订单不存在。"
+
+[OrderNotPaid]
+description = "Order not paid."
+one = "订单未支付。"
+other = "订单未支付。"
+
+[CodeNotFound]
+description = "未找到邀请码。"
+one = "兑换码不存在。"
+other = "兑换码不存在。"
+
+[CodeUsed]
+description = "邀请码已被使用。"
+one = "兑换码已被使用。"
+other = "兑换码已被使用。"
+
+[CodeRevoked]
+description = "邀请码已被撤销。"
+one = "兑换码已撤销。"
+other = "兑换码已撤销。"
+
+[CodeExpired]
+description = "邀请码已过期。"
+one = "兑换码已过期。"
+other = "兑换码已过期。"
+
+[LoginFailed]
+description = "Login failed."
+one = "登录失败。"
+other = "登录失败。"
+
+[UserNotFound]
+description = "User not found."
+one = "用户不存在。"
+other = "用户不存在。"
+
+[LoginBanned]
+description = "Login banned."
+one = "登录已被封禁。"
+other = "登录已被封禁。"
+
+[NoCaptchaRequired]
+description = "No captcha required."
+one = "不需要验证码。"
+other = "不需要验证码。"
+
+[RequiredFields]
+description = "Required fields missing."
+one = "必填字段缺失：{{.P0}}。"
+other = "必填字段缺失：{{.P0}}。"
+
+[InvalidSourceType]
+description = "Invalid source type."
+one = "source_type 无效，仅支持 device_group / ab_tags。"
+other = "source_type 无效，仅支持 device_group / ab_tags。"
+
+[CleanupYearsInvalid]
+description = "Invalid cleanup years."
+one = "参数错误，仅支持清理超过1年或3年的消息。"
+other = "参数错误，仅支持清理超过1年或3年的消息。"
+

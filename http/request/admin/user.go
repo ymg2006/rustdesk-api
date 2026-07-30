@@ -1,16 +1,18 @@
 package admin
 
 import (
-	"github.com/lejianwen/rustdesk-api/v2/model"
+	"github.com/ymg2006/rustdesk-api/v2/model"
 )
 
 type UserForm struct {
-	Id        uint   `json:"id"`
-	Username  string `json:"username" validate:"required,gte=2,lte=32"`
-	Email     string `json:"email"`
+	Id       uint   `json:"id"`
+	Username string `json:"username" validate:"required,gte=2,lte=32"`
+	Email    string `json:"email"` // validate:"required,email" is not enforced for email.
+	//Password string           `json:"password" validate:"required,gte=4,lte=20"`
 	Nickname  string           `json:"nickname"`
 	Avatar    string           `json:"avatar"`
 	GroupId   uint             `json:"group_id" validate:"required"`
+	Role      string           `json:"role"`
 	IsAdmin   *bool            `json:"is_admin" `
 	Status    model.StatusCode `json:"status" validate:"required,gte=0"`
 	Remark    string           `json:"remark"`
@@ -24,6 +26,7 @@ func (uf *UserForm) FromUser(user *model.User) *UserForm {
 	uf.Email = user.Email
 	uf.Avatar = user.Avatar
 	uf.GroupId = user.GroupId
+	uf.Role = user.Role
 	uf.IsAdmin = user.IsAdmin
 	uf.Status = user.Status
 	uf.Remark = user.Remark
@@ -38,6 +41,7 @@ func (uf *UserForm) ToUser() *model.User {
 	user.Email = uf.Email
 	user.Avatar = uf.Avatar
 	user.GroupId = uf.GroupId
+	user.Role = uf.Role
 	user.IsAdmin = uf.IsAdmin
 	user.Status = uf.Status
 	user.Remark = uf.Remark
@@ -69,21 +73,24 @@ type GroupUsersQuery struct {
 	UserId uint `json:"user_id"`
 }
 
+// MfaEnableForm verifies a TOTP code when enabling MFA.
 type MfaEnableForm struct {
-	Code string `json:"code" validate:"required" label:"动态码"`
+	Code string `json:"code" validate:"required" label:"TOTP code"`
 }
 
+// MfaDisableForm verifies the login password when disabling MFA.
 type MfaDisableForm struct {
-	Password string `json:"password" validate:"required" label:"密码"`
+	Password string `json:"password" validate:"required" label:"password"`
 }
 
+// MfaResetForm is used by admins to forcibly reset a user's MFA.
 type MfaResetForm struct {
-	UserId uint `json:"user_id" validate:"required" label:"用户ID"`
+	UserId uint `json:"user_id" validate:"required" label:"user ID"`
 }
 
 type RegisterForm struct {
 	Username        string `json:"username" validate:"required,gte=2,lte=32"`
-	Email           string `json:"email"`
+	Email           string `json:"email"` // validate:"required,email"
 	Password        string `json:"password" validate:"required,gte=4,lte=32"`
 	ConfirmPassword string `json:"confirm_password" validate:"required,gte=4,lte=32"`
 	InviteCode      string `json:"invite_code"`
@@ -91,23 +98,4 @@ type RegisterForm struct {
 
 type UserTokenBatchDeleteForm struct {
 	Ids []uint `json:"ids" validate:"required"`
-}
-
-type InvitationForm struct {
-	Code          string `json:"code"`
-	MaxUsers      int    `json:"max_users"`
-	ExpiredAt     int64  `json:"expired_at"`
-	UserExpiredAt int64  `json:"user_expired_at"`
-	Remark        string `json:"remark"`
-}
-
-type InvitationDeleteForm struct {
-	Id uint `json:"id" validate:"required"`
-}
-
-type InvitationBatchForm struct {
-	Count         int    `json:"count" validate:"required,min=1,max=200"`
-	ExpiredAt     int64  `json:"expired_at"`
-	UserExpiredAt int64  `json:"user_expired_at"`
-	Remark        string `json:"remark"`
 }

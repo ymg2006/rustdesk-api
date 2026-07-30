@@ -6,11 +6,11 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lejianwen/rustdesk-api/v2/config"
-	"github.com/lejianwen/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/config"
+	"github.com/ymg2006/rustdesk-api/v2/global"
 )
 
-// setupCorsTestRouter 构造一个挂载了 Cors 中间件的 gin 引擎，并注册一个返回 200 的测试 handler。
+// setupCorsTestRouter builds a gin engine with the Cors middleware and registers a test handler that returns 200.
 func setupCorsTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -21,7 +21,7 @@ func setupCorsTestRouter() *gin.Engine {
 	return r
 }
 
-// withAllowOrigins 在测试中设置全局 CORS 白名单，避免零值导致中间件 panic / 行为不确定。
+// withAllowOrigins sets the global CORS allowlist in tests to avoid zero-value panics or undefined behavior.
 func withAllowOrigins(origins ...string) {
 	global.Config = config.Config{
 		Cors: config.Cors{AllowOrigins: origins},
@@ -29,9 +29,9 @@ func withAllowOrigins(origins ...string) {
 }
 
 // TestCors_EmptyWhitelist_BlocksAnyOrigin
-// 白名单为空时，不应反射任意 Origin，也不应携带凭据头；同源/跨域请求仍应正常进入 handler。
+// An empty allowlist must not reflect any Origin or send credential headers; same-origin/cross-origin requests still reach the handler.
 func TestCors_EmptyWhitelist_BlocksAnyOrigin(t *testing.T) {
-	withAllowOrigins() // 空白名单
+	withAllowOrigins() // empty allowlist
 	r := setupCorsTestRouter()
 
 	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
@@ -40,18 +40,18 @@ func TestCors_EmptyWhitelist_BlocksAnyOrigin(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("期望 handler 正常返回 200，实际 %d", w.Code)
+		t.Fatalf("expected handler to return 200, got %d", w.Code)
 	}
 	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "" {
-		t.Errorf("白名单为空时不应设置 ACAO，实际 %q", got)
+		t.Errorf("ACAO should not be set when allowlist is empty, got %q", got)
 	}
 	if got := w.Header().Get("Access-Control-Allow-Credentials"); got != "" {
-		t.Errorf("白名单为空时不应设置凭据头，实际 %q", got)
+		t.Errorf("credential header should not be set when allowlist is empty, got %q", got)
 	}
 }
 
 // TestCors_AllowedOrigin_ReflectsAndAllowsCredentials
-// 命中白名单的 Origin 应被原样反射，且必须带 Access-Control-Allow-Credentials: true。
+// An allowlisted Origin should be reflected exactly and must include Access-Control-Allow-Credentials: true.
 func TestCors_AllowedOrigin_ReflectsAndAllowsCredentials(t *testing.T) {
 	withAllowOrigins("https://a.example.com")
 	r := setupCorsTestRouter()
@@ -62,18 +62,18 @@ func TestCors_AllowedOrigin_ReflectsAndAllowsCredentials(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("期望 handler 正常返回 200，实际 %d", w.Code)
+		t.Fatalf("expected handler to return 200, got %d", w.Code)
 	}
 	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "https://a.example.com" {
-		t.Errorf("期望 ACAO 反射为 https://a.example.com，实际 %q", got)
+		t.Errorf("expected ACAO to reflect https://a.example.com, got %q", got)
 	}
 	if got := w.Header().Get("Access-Control-Allow-Credentials"); got != "true" {
-		t.Errorf("期望凭据头为 true，实际 %q", got)
+		t.Errorf("expected credential header to be true, got %q", got)
 	}
 }
 
 // TestCors_DisallowedOrigin_NoCorsHeaders
-// 未命中白名单的 Origin 不应反射，也不应允许凭据。
+// A non-allowlisted Origin should not be reflected and should not allow credentials.
 func TestCors_DisallowedOrigin_NoCorsHeaders(t *testing.T) {
 	withAllowOrigins("https://a.example.com")
 	r := setupCorsTestRouter()
@@ -84,18 +84,18 @@ func TestCors_DisallowedOrigin_NoCorsHeaders(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("期望 handler 正常返回 200，实际 %d", w.Code)
+		t.Fatalf("expected handler to return 200, got %d", w.Code)
 	}
 	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "" {
-		t.Errorf("未命中白名单不应设置 ACAO，实际 %q", got)
+		t.Errorf("ACAO should not be set for non-allowlisted origin, got %q", got)
 	}
 	if got := w.Header().Get("Access-Control-Allow-Credentials"); got != "" {
-		t.Errorf("未命中白名单不应设置凭据头，实际 %q", got)
+		t.Errorf("credential header should not be set for non-allowlisted origin, got %q", got)
 	}
 }
 
 // TestCors_Preflight_AllowedOrigin_Returns204
-// 命中白名单的 OPTIONS 预检应直接返回 204 且带 ACAO。
+// An allowlisted OPTIONS preflight should return 204 directly and include ACAO.
 func TestCors_Preflight_AllowedOrigin_Returns204(t *testing.T) {
 	withAllowOrigins("https://a.example.com")
 	r := setupCorsTestRouter()
@@ -107,15 +107,15 @@ func TestCors_Preflight_AllowedOrigin_Returns204(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusNoContent {
-		t.Fatalf("预检命中白名单应返回 204，实际 %d", w.Code)
+		t.Fatalf("allowlisted preflight should return 204, got %d", w.Code)
 	}
 	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "https://a.example.com" {
-		t.Errorf("预检响应应带 ACAO，实际 %q", got)
+		t.Errorf("preflight response should include ACAO, got %q", got)
 	}
 }
 
 // TestCors_Preflight_DisallowedOrigin_Not204
-// 未命中白名单的 OPTIONS 预检不应返回 204，也不应设置 ACAO（从源头拒绝跨域）。
+// A non-allowlisted OPTIONS preflight should not return 204 and should not set ACAO.
 func TestCors_Preflight_DisallowedOrigin_Not204(t *testing.T) {
 	withAllowOrigins("https://a.example.com")
 	r := setupCorsTestRouter()
@@ -127,33 +127,33 @@ func TestCors_Preflight_DisallowedOrigin_Not204(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	if w.Code == http.StatusNoContent {
-		t.Fatalf("预检未命中白名单不应返回 204")
+		t.Fatalf("non-allowlisted preflight should not return 204")
 	}
 	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "" {
-		t.Errorf("预检未命中白名单不应设置 ACAO，实际 %q", got)
+		t.Errorf("non-allowlisted preflight should not set ACAO, got %q", got)
 	}
 }
 
 // TestCors_NoOriginHeader_ReachesHandler
-// 无 Origin 头的同源请求应正常进入 handler（200），且不应设置多余 CORS 头。
+// Same-origin requests without an Origin header should reach the handler and should not set extra CORS headers.
 func TestCors_NoOriginHeader_ReachesHandler(t *testing.T) {
 	withAllowOrigins("https://a.example.com")
 	r := setupCorsTestRouter()
 
-	req := httptest.NewRequest(http.MethodGet, "/ping", nil) // 无 Origin 头
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil) // no Origin header
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("期望同源请求返回 200，实际 %d", w.Code)
+		t.Fatalf("expected same-origin request to return 200, got %d", w.Code)
 	}
 	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "" {
-		t.Errorf("无 Origin 不应设置 ACAO，实际 %q", got)
+		t.Errorf("ACAO should not be set without Origin, got %q", got)
 	}
 }
 
 // TestCors_CaseInsensitiveMatch
-// 白名单按大小写不敏感匹配，确认行为稳定（防止大小写绕过）。
+// Allowlist matching is case-insensitive to keep behavior stable and prevent case-based bypasses.
 func TestCors_CaseInsensitiveMatch(t *testing.T) {
 	withAllowOrigins("https://a.example.com")
 	r := setupCorsTestRouter()
@@ -164,12 +164,12 @@ func TestCors_CaseInsensitiveMatch(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("期望 handler 正常返回 200，实际 %d", w.Code)
+		t.Fatalf("expected handler to return 200, got %d", w.Code)
 	}
 	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "HTTPS://A.EXAMPLE.COM" {
-		t.Errorf("大小写不敏感匹配后 ACAO 应反射原始 Origin，实际 %q", got)
+		t.Errorf("after case-insensitive match, ACAO should reflect original Origin, got %q", got)
 	}
 	if got := w.Header().Get("Access-Control-Allow-Credentials"); got != "true" {
-		t.Errorf("期望凭据头为 true，实际 %q", got)
+		t.Errorf("expected credential header to be true, got %q", got)
 	}
 }
