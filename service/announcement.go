@@ -1,48 +1,95 @@
 package service
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/ymg2006/rustdesk-api/v2/model"
+	"gorm.io/gorm"
 )
 
 type AnnouncementService struct {
 }
 
-func (as *AnnouncementService) List(where ...interface{}) *[]model.Announcement {
-	announcements := &[]model.Announcement{}
-	DB.Where("status = 1").Order("created_at desc").Find(announcements, where...)
-	return announcements
+var ErrAnnouncementNotFound = errors.New("announcement not found")
+
+func (as *AnnouncementService) ListAdmin() ([]model.Announcement, error) {
+	var announcements []model.Announcement
+	err := DB.Order("created_at desc").Find(&announcements).Error
+	if err != nil {
+		return nil, fmt.Errorf("list announcements for admin: %w", err)
+	}
+	return announcements, nil
 }
 
-// ListActiveForClient returns the list of announcements that the client can display
-func (as *AnnouncementService) ListActiveForClient() *[]map[string]interface{} {
-	announcements := &[]model.Announcement{}
-	DB.Where("status = 1").Order("created_at desc").Find(announcements)
-	result := &[]map[string]interface{}{}
-	for _, a := range *announcements {
-		*result = append(*result, map[string]interface{}{
+func (as *AnnouncementService) ListActiveForClient() ([]map[string]interface{}, error) {
+	var announcements []model.Announcement
+	if err := DB.Where("status = ?", 1).Order("created_at desc").
+		Find(&announcements).Error; err != nil {
+		return nil, fmt.Errorf("list active announcements: %w", err)
+	}
+	result := make([]map[string]interface{}, 0, len(announcements))
+	for _, a := range announcements {
+		result = append(result, map[string]interface{}{
 			"id":         a.Id,
 			"title":      a.Title,
 			"content":    a.Content,
 			"created_at": a.CreatedAt,
 		})
 	}
-	return result
+	return result, nil
 }
 
-func (as *AnnouncementService) Info(id int) *model.Announcement {
+func (as *AnnouncementService) Info(id uint) (*model.Announcement, error) {
 	a := &model.Announcement{}
-	DB.Where("id = ?", id).First(a)
-	return a
+	err := DB.Where("id = ?", id).First(a).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, ErrAnnouncementNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("find announcement: %w", err)
+	}
+	return a, nil
 }
 
-func (as *AnnouncementService) Create(a *model.Announcement) {
-	DB.Create(a)
+func (as *AnnouncementService) Create(a *model.Announcement) error {
+	return DB.Transaction(func(tx *gorm.DB) error {
+		status := a.Status
+		if err := tx.Create(a).Error; err != nil {
+			return fmt.Errorf("create announcement: %w", err)
+		}
+		if status == 0 {
+			if err := tx.Model(&model.Announcement{}).Where("id = ?", a.Id).
+				Update("status", 0).Error; err != nil {
+				return fmt.Errorf("set announcement status: %w", err)
+			}
+			a.Status = 0
+		}
+		return nil
+	})
 }
 
-func (as *AnnouncementService) Update(a *model.Announcement) {
-	DB.Model(a).Updates(a)
+func (as *AnnouncementService) Update(a *model.Announcement) error {
+	result := DB.Model(&model.Announcement{}).Where("id = ?", a.Id).
+		Updates(map[string]interface{}{
+			"title": a.Title, "content": a.Content, "status": a.Status,
+		})
+	if result.Error != nil {
+		return fmt.Errorf("update announcement: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrAnnouncementNotFound
+	}
+	return nil
 }
 
-func (as *AnnouncementService) Delete(a *model.Announcement) {
-	DB.Delete(a)
+func (as *AnnouncementService) Delete(id uint) error {
+	result := DB.Delete(&model.Announcement{}, id)
+	if result.Error != nil {
+		return fmt.Errorf("delete announcement: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrAnnouncementNotFound
+	}
+	return nil
 }

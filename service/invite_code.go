@@ -10,6 +10,7 @@ import (
 
 	"github.com/ymg2006/rustdesk-api/v2/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // InviteCodeService subscription invitation code service
@@ -29,8 +30,9 @@ func (s *InviteCodeService) Db() *gorm.DB {
 const base62Charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
 var (
-	ErrInviteCodeNotFound = errors.New("invite code not found")
-	ErrInviteCodeUsed     = errors.New("used invite code cannot be deleted")
+	ErrInviteCodeNotFound        = errors.New("invite code not found")
+	ErrInviteCodeUsed            = errors.New("used invite code cannot be deleted")
+	ErrInviteCodeAlreadyConsumed = errors.New("invite code already used or revoked")
 )
 
 // generateCode generates a 32-bit base62 random string
@@ -80,28 +82,31 @@ func (s *InviteCodeService) GenerateWithDB(db *gorm.DB, plan string, userID uint
 // Activate Activate user subscription using invitation code (deferral strategy)
 // Transaction: update code status + update user.subscription_expire_at
 func (s *InviteCodeService) Activate(codeStr string, userID uint) (*model.InviteCode, error) {
-	ic := &model.InviteCode{}
-	if err := s.Db().Where("code = ?", codeStr).First(ic).Error; err != nil {
-		return nil, fmt.Errorf("code not found: %w", err)
-	}
-
-	// status check
-	switch ic.Status {
-	case "used":
-		return nil, fmt.Errorf("code already used")
-	case "revoked":
-		return nil, fmt.Errorf("code revoked")
-	default:
-		// unused
-	}
-
-	// Validity check
-	if ic.ExpireAt.Before(time.Now()) {
-		return nil, fmt.Errorf("code expired")
-	}
+	lockKey := fmt.Sprintf("invite-code-activate:user:%d", userID)
+	Lock.Lock(lockKey)
+	defer Lock.UnLock(lockKey)
 
 	now := time.Now()
+	ic := &model.InviteCode{}
 	err := s.Db().Transaction(func(tx *gorm.DB) error {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("code = ?", codeStr).First(ic).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrInviteCodeNotFound
+			}
+			return fmt.Errorf("find invite code for activation: %w", err)
+		}
+
+		switch ic.Status {
+		case "used":
+			return ErrInviteCodeAlreadyConsumed
+		case "revoked":
+			return ErrInviteCodeAlreadyConsumed
+		}
+		if ic.ExpireAt.Before(now) {
+			return fmt.Errorf("code expired")
+		}
+
 		// Atomic update code status (optimistic locking)
 		res := tx.Model(&model.InviteCode{}).
 			Where("id = ? AND status = ?", ic.Id, "unused").
@@ -114,14 +119,15 @@ func (s *InviteCodeService) Activate(codeStr string, userID uint) (*model.Invite
 		if res.Error != nil {
 			return res.Error
 		}
-		if res.RowsAffected == 0 {
-			return fmt.Errorf("code already used or revoked (concurrent)")
+		if res.RowsAffected != 1 {
+			return ErrInviteCodeAlreadyConsumed
 		}
 
 		// Update user subscription expiration time (extension policy)
 		user := &model.User{}
-		if err := tx.Where("id = ?", userID).First(user).Error; err != nil {
-			return err
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("id = ?", userID).First(user).Error; err != nil {
+			return fmt.Errorf("load user for activation: %w", err)
 		}
 		var newExpire time.Time
 		periodDuration := time.Duration(ic.ExpireDays*24) * time.Hour
@@ -132,13 +138,17 @@ func (s *InviteCodeService) Activate(codeStr string, userID uint) (*model.Invite
 		}
 		// Synchronously update expired_at
 		expiredAt := newExpire.Unix()
-		if err := tx.Model(&model.User{}).Where("id = ?", userID).
+		result := tx.Model(&model.User{}).Where("id = ?", userID).
 			Updates(map[string]interface{}{
 				"subscription_plan":      ic.Plan,
 				"subscription_expire_at": &newExpire,
 				"expired_at":             expiredAt,
-			}).Error; err != nil {
-			return err
+			})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return fmt.Errorf("user not found")
 		}
 
 		ic.Status = "used"
@@ -226,7 +236,9 @@ func (s *InviteCodeService) List(filter InviteCodeFilter) ([]*model.InviteCode, 
 	}
 
 	var total int64
-	query.Count(&total)
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("count invite codes: %w", err)
+	}
 
 	if filter.Page <= 0 {
 		filter.Page = 1
@@ -236,24 +248,38 @@ func (s *InviteCodeService) List(filter InviteCodeFilter) ([]*model.InviteCode, 
 	}
 
 	var list []*model.InviteCode
-	query.Order("id desc").
+	if err := query.Order("id desc").
 		Offset((filter.Page - 1) * filter.PageSize).
 		Limit(filter.PageSize).
-		Find(&list)
+		Find(&list).Error; err != nil {
+		return nil, 0, fmt.Errorf("list invite codes: %w", err)
+	}
 
 	return list, total, nil
 }
 
 // InfoByCode query based on code
-func (s *InviteCodeService) InfoByCode(code string) *model.InviteCode {
+func (s *InviteCodeService) InfoByCode(code string) (*model.InviteCode, error) {
 	ic := &model.InviteCode{}
-	s.Db().Where("code = ?", code).First(ic)
-	return ic
+	err := s.Db().Where("code = ?", code).First(ic).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, ErrInviteCodeNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("find invite code by code: %w", err)
+	}
+	return ic, nil
 }
 
 // InfoByOrderID queries the generated invitation code based on the order number
-func (s *InviteCodeService) InfoByOrderID(orderID string) *model.InviteCode {
+func (s *InviteCodeService) InfoByOrderID(orderID string) (*model.InviteCode, error) {
 	ic := &model.InviteCode{}
-	s.Db().Where("bound_order_id = ?", orderID).First(ic)
-	return ic
+	err := s.Db().Where("bound_order_id = ?", orderID).First(ic).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, ErrInviteCodeNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("find invite code by order ID: %w", err)
+	}
+	return ic, nil
 }

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -306,8 +307,17 @@ func (sc *SubscribeController) QueryOrder(c *gin.Context) {
 	}
 
 	ics := &service.InviteCodeService{}
-	ic := ics.InfoByOrderID(outTradeNo)
-	codeIssued := ic != nil && ic.Id > 0
+	ic, err := ics.InfoByOrderID(outTradeNo)
+	codeIssued := false
+	switch {
+	case err == nil:
+		codeIssued = true
+	case errors.Is(err, service.ErrInviteCodeNotFound):
+		codeIssued = false
+	default:
+		response.ServerError(c)
+		return
+	}
 
 	resp := &respApi.OrderResp{
 		OutTradeNo:  order.OutTradeNo,
@@ -348,7 +358,7 @@ func (sc *SubscribeController) Claim(c *gin.Context) {
 		case contains(errMsg, "ORDER_NOT_PAID"):
 			response.Fail(c, 4102, response.TranslateMsg(c, "OrderNotPaid"))
 		default:
-			response.Fail(c, 500, errMsg)
+			response.ServerError(c)
 		}
 		return
 	}
@@ -378,16 +388,16 @@ func (sc *SubscribeController) Redeem(c *gin.Context) {
 	if err != nil {
 		errMsg := err.Error()
 		switch {
-		case contains(errMsg, "code not found"):
+		case errors.Is(err, service.ErrInviteCodeNotFound):
 			response.Fail(c, 4201, response.TranslateMsg(c, "CodeNotFound"))
-		case contains(errMsg, "code already used"):
+		case errors.Is(err, service.ErrInviteCodeAlreadyConsumed):
 			response.Fail(c, 4202, response.TranslateMsg(c, "CodeUsed"))
 		case contains(errMsg, "code revoked"):
 			response.Fail(c, 4203, response.TranslateMsg(c, "CodeRevoked"))
 		case contains(errMsg, "code expired"):
 			response.Fail(c, 4204, response.TranslateMsg(c, "CodeExpired"))
 		default:
-			response.Fail(c, 500, errMsg)
+			response.ServerError(c)
 		}
 		return
 	}

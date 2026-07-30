@@ -2,6 +2,7 @@ package admin
 
 import (
 	"encoding/base64"
+	"errors"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -496,9 +497,13 @@ func (ct *User) Register(c *gin.Context) {
 		}
 		// Replace old Invitation with InviteCode (authorization code)
 		ics := &service.InviteCodeService{}
-		ic := ics.InfoByCode(f.InviteCode)
-		if ic == nil || ic.Id == 0 {
+		ic, err := ics.InfoByCode(f.InviteCode)
+		if errors.Is(err, service.ErrInviteCodeNotFound) {
 			response.Fail(c, 101, response.TranslateMsg(c, "InviteCodeInvalid"))
+			return
+		}
+		if err != nil {
+			response.ServerError(c)
 			return
 		}
 		if ic.Status != "unused" {
@@ -526,8 +531,17 @@ func (ct *User) Register(c *gin.Context) {
 	// After successful registration, consume the authorization code + activate the subscription (atomic update prevents concurrent reuse)
 	if global.Config.App.InviteOnly && f.InviteCode != "" {
 		ics := &service.InviteCodeService{}
-		ic := ics.InfoByCode(f.InviteCode)
-		if ic != nil && ic.Id > 0 && ic.Status == "unused" {
+		ic, err := ics.InfoByCode(f.InviteCode)
+		if err != nil {
+			global.DB.Delete(&model.User{}, u.Id)
+			if errors.Is(err, service.ErrInviteCodeNotFound) {
+				response.Fail(c, 101, response.TranslateMsg(c, "InviteCodeInvalid"))
+			} else {
+				response.ServerError(c)
+			}
+			return
+		}
+		if ic.Status == "unused" {
 			now := time.Now()
 			// Atomic update: only update records with status="unused"
 			result := global.DB.Model(&model.InviteCode{}).

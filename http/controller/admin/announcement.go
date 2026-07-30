@@ -1,9 +1,12 @@
 package admin
 
 import (
+	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	adminReq "github.com/ymg2006/rustdesk-api/v2/http/request/admin"
 	"github.com/ymg2006/rustdesk-api/v2/http/response"
 	"github.com/ymg2006/rustdesk-api/v2/model"
 	"github.com/ymg2006/rustdesk-api/v2/service"
@@ -14,7 +17,11 @@ type Announcement struct {
 
 // List announcement list
 func (a *Announcement) List(c *gin.Context) {
-	announcements := service.AllService.AnnouncementService.List()
+	announcements, err := service.AllService.AnnouncementService.ListAdmin()
+	if err != nil {
+		response.ServerError(c)
+		return
+	}
 	response.Success(c, gin.H{
 		"announcements": announcements,
 	})
@@ -22,10 +29,18 @@ func (a *Announcement) List(c *gin.Context) {
 
 // Info announcement details
 func (a *Announcement) Info(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Query("id"))
-	announcement := service.AllService.AnnouncementService.Info(id)
-	if announcement.Id == 0 {
+	id, err := strconv.ParseUint(c.Query("id"), 10, 64)
+	if err != nil || id == 0 {
+		response.Fail(c, 400, response.TranslateMsg(c, "ParamsError"))
+		return
+	}
+	announcement, err := service.AllService.AnnouncementService.Info(uint(id))
+	if errors.Is(err, service.ErrAnnouncementNotFound) {
 		response.Fail(c, 404, response.TranslateMsg(c, "AnnouncementNotFound"))
+		return
+	}
+	if err != nil {
+		response.ServerError(c)
 		return
 	}
 	response.Success(c, announcement)
@@ -33,42 +48,87 @@ func (a *Announcement) Info(c *gin.Context) {
 
 // Create Create announcement
 func (a *Announcement) Create(c *gin.Context) {
-	announcement := &model.Announcement{}
-	if err := c.ShouldBindJSON(announcement); err != nil {
+	req := &adminReq.AnnouncementCreateReq{}
+	if err := c.ShouldBindJSON(req); err != nil {
 		response.Fail(c, 101, response.TranslateMsg(c, "ParamsError")+err.Error())
 		return
 	}
-	if announcement.Title == "" {
+	req.Title = strings.TrimSpace(req.Title)
+	req.Content = strings.TrimSpace(req.Content)
+	if req.Title == "" {
 		response.Fail(c, 401, response.TranslateMsg(c, "TitleRequired"))
 		return
 	}
-	service.AllService.AnnouncementService.Create(announcement)
+	if req.Content == "" {
+		response.Fail(c, 400, response.TranslateMsg(c, "ParamsError"))
+		return
+	}
+	status := 1
+	if req.Status != nil {
+		status = *req.Status
+	}
+	if status != 0 && status != 1 {
+		response.Fail(c, 400, response.TranslateMsg(c, "ParamsError"))
+		return
+	}
+	announcement := &model.Announcement{
+		Title: req.Title, Content: req.Content, Status: status,
+	}
+	if err := service.AllService.AnnouncementService.Create(announcement); err != nil {
+		response.ServerError(c)
+		return
+	}
 	response.Success(c, announcement)
 }
 
 // Update update announcement
 func (a *Announcement) Update(c *gin.Context) {
-	announcement := &model.Announcement{}
-	if err := c.ShouldBindJSON(announcement); err != nil {
+	req := &adminReq.AnnouncementUpdateReq{}
+	if err := c.ShouldBindJSON(req); err != nil {
 		response.Fail(c, 101, response.TranslateMsg(c, "ParamsError")+err.Error())
 		return
 	}
-	if announcement.Id == 0 {
+	if req.ID == 0 {
 		response.Fail(c, 401, response.TranslateMsg(c, "IdRequired"))
 		return
 	}
-	service.AllService.AnnouncementService.Update(announcement)
+	req.Title = strings.TrimSpace(req.Title)
+	req.Content = strings.TrimSpace(req.Content)
+	if req.Title == "" || req.Content == "" || (req.Status != 0 && req.Status != 1) {
+		response.Fail(c, 400, response.TranslateMsg(c, "ParamsError"))
+		return
+	}
+	announcement := &model.Announcement{
+		IdModel: model.IdModel{Id: req.ID},
+		Title:   req.Title, Content: req.Content, Status: req.Status,
+	}
+	err := service.AllService.AnnouncementService.Update(announcement)
+	if errors.Is(err, service.ErrAnnouncementNotFound) {
+		response.Fail(c, 404, response.TranslateMsg(c, "AnnouncementNotFound"))
+		return
+	}
+	if err != nil {
+		response.ServerError(c)
+		return
+	}
 	response.Success(c, nil)
 }
 
 // Delete delete announcement
 func (a *Announcement) Delete(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Query("id"))
-	announcement := service.AllService.AnnouncementService.Info(id)
-	if announcement.Id == 0 {
+	id, parseErr := strconv.ParseUint(c.Query("id"), 10, 64)
+	if parseErr != nil || id == 0 {
+		response.Fail(c, 400, response.TranslateMsg(c, "ParamsError"))
+		return
+	}
+	err := service.AllService.AnnouncementService.Delete(uint(id))
+	if errors.Is(err, service.ErrAnnouncementNotFound) {
 		response.Fail(c, 404, response.TranslateMsg(c, "AnnouncementNotFound"))
 		return
 	}
-	service.AllService.AnnouncementService.Delete(announcement)
+	if err != nil {
+		response.ServerError(c)
+		return
+	}
 	response.Success(c, nil)
 }

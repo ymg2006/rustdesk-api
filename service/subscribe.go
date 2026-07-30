@@ -3,6 +3,7 @@ package service
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -304,9 +305,14 @@ func (s *SubscribeService) ClaimCode(userID uint, outTradeNo string) (*model.Inv
 	}
 
 	ics := &InviteCodeService{}
-	existing := ics.InfoByOrderID(outTradeNo)
-	if existing != nil && existing.Id > 0 {
+	existing, err := ics.InfoByOrderID(outTradeNo)
+	switch {
+	case err == nil:
 		return existing, nil
+	case errors.Is(err, ErrInviteCodeNotFound):
+		// Continue with generation.
+	default:
+		return nil, fmt.Errorf("query existing invite code: %w", err)
 	}
 
 	periodDays := order.PeriodDays

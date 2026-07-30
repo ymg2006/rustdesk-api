@@ -17,7 +17,11 @@ type Announcement struct {
 // @Success 200 {object} response.Response
 // @Router /api/announcements [get]
 func (a *Announcement) List(c *gin.Context) {
-	announcements := service.AllService.AnnouncementService.ListActiveForClient()
+	announcements, err := service.AllService.AnnouncementService.ListActiveForClient()
+	if err != nil {
+		response.ServerError(c)
+		return
+	}
 	response.Success(c, gin.H{
 		"announcements": announcements,
 	})
