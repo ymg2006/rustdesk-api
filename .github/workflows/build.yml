@@ -14,7 +14,7 @@ on:
       WEBCLIENT_REF:
         description: 'Web client branch, tag, or commit SHA'
         required: true
-        default: 'Subscribe'
+        default: 'master'
       VERSION_TAG:
         description: 'Release tag name (e.g. v1.2.3). Leave empty to skip release.'
         required: false
@@ -28,7 +28,7 @@ env:
   LATEST_TAG: latest
   DOCKER_BUILD_RECORD_UPLOAD: 'false'
   WEBCLIENT_REPOSITORY: ${{ github.event.inputs.WEBCLIENT_REPOSITORY || 'ymg2006/rustdesk-api-web' }}
-  WEBCLIENT_REF: ${{ github.event.inputs.WEBCLIENT_REF || 'Subscribe' }}
+  WEBCLIENT_REF: ${{ github.event.inputs.WEBCLIENT_REF || 'master' }}
   DOCKERHUB_IMAGE_NAMESPACE: ${{ github.event.inputs.DOCKERHUB_IMAGE_NAMESPACE || github.actor }}
   VERSION_TAG: ${{ github.event.inputs.VERSION_TAG || '' }}
 jobs:
