@@ -22,6 +22,7 @@
 
     <!-- iOS meta tags & icons -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="RustDesk" />
     <link rel="apple-touch-icon" href="icons/Icon-192.png?v=1a7ad736" />
@@ -34,7 +35,7 @@
     
     <script id="custom-config" type="text/plain">{{CUSTOM_CONFIG}}</script>
     
-    <script type="module" crossorigin src="js/dist/index.js?v=506a4f52"></script>
+    <script type="module" crossorigin src="js/dist/index.js?v=7667ed2f"></script>
     <link rel="modulepreload" href="js/dist/vendor.js?v=97fc7629" />
     <style>
       html,
@@ -253,7 +254,7 @@
         spanConsole.style.color = them === "dark" ? "#fff" : "#000";
       }
 
-      const serviceWorkerVersion = "3276997496";
+      const serviceWorkerVersion = "20260801043000";
       var scriptLoaded = false;
       function loadMainDartJs() {
         if (scriptLoaded) {
@@ -261,7 +262,7 @@
         }
         scriptLoaded = true;
         var scriptTag = document.createElement("script");
-        scriptTag.src = "main.dart.js?v=472795f5";
+        scriptTag.src = "main.dart.js?v=b56dc1ba";
         scriptTag.type = "application/javascript";
         document.body.append(scriptTag);
       }
