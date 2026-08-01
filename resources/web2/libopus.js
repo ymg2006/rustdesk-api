@@ -21,9 +21,9 @@ var objAssign = Object.assign;
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
 Module["onRuntimeInitialized"] = function(){
+  Module.loaded = true;
   if(Module.onload)
     Module.onload();
-  Module.loaded = true;
 }
 
 Module["locateFile"] = function(url){
@@ -5544,12 +5544,35 @@ if(Module["ENVIRONMENT"] != "NODE")
 
 var dec;
 var i = 0;
-self.addEventListener('message', (e) => {
-  if (e.data.channels > 0) {
+var pendingMessages = [];
+
+function handleMessage(data) {
+  if (data.channels > 0) {
     if (dec) dec.destroy();
-    dec = new Decoder(e.data.channels, e.data.sampleRate);
-  } else {
-    dec.input(e.data);
-    self.postMessage(dec.output().slice(0));
+    dec = new Decoder(data.channels, data.sampleRate);
+    return;
   }
+  if (!dec) {
+    pendingMessages.push(data);
+    return;
+  }
+  dec.input(data);
+  var output = dec.output();
+  if (output) self.postMessage(output.slice(0));
+}
+
+Module.onload = function() {
+  var queued = pendingMessages;
+  pendingMessages = [];
+  for (var index = 0; index < queued.length; index++) {
+    handleMessage(queued[index]);
+  }
+};
+
+self.addEventListener('message', (e) => {
+  if (!Module.loaded) {
+    pendingMessages.push(e.data);
+    return;
+  }
+  handleMessage(e.data);
 });
