@@ -521,13 +521,6 @@ func (us *UserService) formatUsername(username string) string {
 	return username
 }
 
-// Helper functions, getUserCount
-func (us *UserService) getUserCount() int64 {
-	var count int64
-	DB.Model(&model.User{}).Count(&count)
-	return count
-}
-
 // helper functions, getAdminUserCount
 func (us *UserService) getAdminUserCount() int64 {
 	var count int64
@@ -539,9 +532,9 @@ func (us *UserService) getAdminUserCount() int64 {
 func (us *UserService) UserTokenExpireTimestamp() int64 {
 	exp := Config.App.TokenExpire
 	if exp == 0 {
-		// The default is two hours. The web background (BackendUserAuth) does not automatically renew, and you need to log in again when it expires;
+		// The default is one day. The web background (BackendUserAuth) does not automatically renew, and you need to log in again when it expires;
 		// The client (rustauth) still uses sliding renewal, and active sessions are not affected.
-		exp = 7200
+		exp = 24 * time.Hour
 	}
 	return time.Now().Add(exp).Unix()
 }

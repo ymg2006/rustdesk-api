@@ -11,7 +11,7 @@ app:
   ban-window-minutes: 15 # A sliding window (minutes) for counting consecutive failed login attempts, default 15; older failed login records outside the window will be automatically cleared.
   ban-duration-minutes: 30 # The duration (in minutes) during which this IP address will be banned from logging in after the ban is triggered, default 30.
   show-swagger: 0 # Whether to display API documentation Swagger: 1 for enabled, 0 for disabled (recommended to disable in production environments)
-  token-expire: 7200h # Login Token Validity Period
+  token-expire: 168h # Login Token Validity Period
   web-sso: true # Enable Web Single Sign-On (SSO) capability
   disable-pwd-login: false # Disable account and password login, false: retain password login
   invite-only: true # Enable Invitation Code Mode

@@ -6,6 +6,7 @@ import (
 	"github.com/ymg2006/rustdesk-api/v2/http/request/admin"
 	"github.com/ymg2006/rustdesk-api/v2/http/response"
 	"github.com/ymg2006/rustdesk-api/v2/service"
+	"gorm.io/gorm"
 	"strconv"
 )
 
@@ -73,6 +74,7 @@ func (ct *DeviceGroup) Create(c *gin.Context) {
 // @Produce  json
 // @Param page query int false "page number"
 // @Param page_size query int false "page size"
+// @Param name query string false "device group name"
 // @Success 200 {object} response.Response{data=model.GroupList}
 // @Failure 500 {object} response.Response
 // @Router /admin/device_group/list [get]
@@ -83,7 +85,12 @@ func (ct *DeviceGroup) List(c *gin.Context) {
 		response.Fail(c, 101, response.TranslateMsg(c, "ParamsError")+err.Error())
 		return
 	}
-	res := service.AllService.GroupService.DeviceGroupList(query.Page, query.PageSize, nil)
+	name := c.Query("name")
+	res := service.AllService.GroupService.DeviceGroupList(query.Page, query.PageSize, func(tx *gorm.DB) {
+		if name != "" {
+			tx.Where("name like ?", "%"+name+"%")
+		}
+	})
 	response.Success(c, res)
 }
 

@@ -3,8 +3,9 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ymg2006/rustdesk-api/v2/model"
 	"time"
+
+	"github.com/ymg2006/rustdesk-api/v2/model"
 )
 
 // peerNotifyRecord Notification record for each peer (used in the NotifiedPeers JSON field)
@@ -129,9 +130,10 @@ func (s *AlertService) getMonitoredPeerIds(cfg *model.AlertConfig) ([]string, bo
 
 	var peerIds []string
 	for _, t := range targets {
-		if t.TargetType == "peer" {
+		switch t.TargetType {
+		case "peer":
 			peerIds = append(peerIds, t.TargetId)
-		} else if t.TargetType == "collection" {
+		case "collection":
 			var abEntries []model.AddressBook
 			DB.Where("collection_id = ?", t.TargetId).Find(&abEntries)
 			for _, ab := range abEntries {
@@ -311,11 +313,12 @@ func (s *AlertService) checkOfflineDevices() {
 
 		// Update the number of consecutive trigger days (only counted once per calendar day)
 		if pushedAny {
-			if cfg.LastTriggerDay == today {
+			switch cfg.LastTriggerDay {
+			case today:
 				// Already counted on that day, no repeated accumulation
-			} else if cfg.LastTriggerDay == prevDay {
+			case prevDay:
 				cfg.ConsecutiveTriggerDays++
-			} else {
+			default:
 				cfg.ConsecutiveTriggerDays = 1
 			}
 			cfg.LastTriggerDay = today
