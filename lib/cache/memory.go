@@ -17,6 +17,7 @@ type MemoryCache struct {
 	mu        sync.Mutex
 	maxBytes  int64
 	usedBytes int64
+	closeOnce sync.Once
 }
 
 type CacheItem struct {
@@ -178,7 +179,13 @@ func (m *MemoryCache) startEviction() {
 
 // stopEviction stops scheduled cleaning
 func (m *MemoryCache) stopEviction() {
-	close(m.quit)
+	m.closeOnce.Do(func() { close(m.quit) })
+}
+
+// Close stops the cache's background eviction worker.
+func (m *MemoryCache) Close() error {
+	m.stopEviction()
+	return nil
 }
 
 // deleteItem removes a key from the cache.

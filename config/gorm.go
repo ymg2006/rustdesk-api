@@ -1,5 +1,7 @@
 package config
 
+import "time"
+
 const (
 	TypeSqlite     = "sqlite"
 	TypeMysql      = "mysql"
@@ -7,9 +9,12 @@ const (
 )
 
 type Gorm struct {
-	Type         string `mapstructure:"type"`
-	MaxIdleConns int    `mapstructure:"max-idle-conns"`
-	MaxOpenConns int    `mapstructure:"max-open-conns"`
+	Type            string        `mapstructure:"type"`
+	MaxIdleConns    int           `mapstructure:"max-idle-conns"`
+	MaxOpenConns    int           `mapstructure:"max-open-conns"`
+	ConnMaxLifetime time.Duration `mapstructure:"conn-max-lifetime"`
+	ConnMaxIdleTime time.Duration `mapstructure:"conn-max-idle-time"`
+	ConnectTimeout  time.Duration `mapstructure:"connect-timeout"`
 }
 
 type Mysql struct {

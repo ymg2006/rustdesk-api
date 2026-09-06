@@ -38,6 +38,9 @@ gorm:
   type: "sqlite" # General GORM Database Configuration (ORM Framework) # Default database types: sqlite/mysql/postgresql. Switching databases requires modifying the corresponding database configuration.
   max-idle-conns: 10 # Maximum number of idle connections in the database connection pool
   max-open-conns: 100 # Maximum number of concurrent open connections in a database connection pool
+  conn-max-lifetime: 1h # Maximum lifetime of a pooled server-database connection
+  conn-max-idle-time: 10m # Maximum idle time of a pooled server-database connection
+  connect-timeout: 10s # Startup SQL database connectivity-check timeout
 
 # MySQL database connection configuration, takes effect when type=mysql
 mysql:
@@ -56,6 +59,15 @@ postgresql:
   dbname: "postgres" # Default database name
   sslmode: "disable" # SSL encryption mode: disable to turn off / require to force to turn on / verify-ca to verify CA certificate / verify-full to fully verify certificate
   time-zone: "Asia/Shanghai" # PG connection session time zone, Shanghai East 8 zone
+
+# Application cache. File cache remains the default; Redis/Dragonfly is only required when type=redis.
+cache:
+  type: "file" # Supported values: file, memory, redis
+  file-dir: "./runtime/cache"
+  redis-addr: "127.0.0.1:6379"
+  redis-pwd: ""
+  redis-db: 0
+  connect-timeout: 5s # Startup Redis/Dragonfly connectivity-check timeout
 
 # RustDesk core service address configuration
 rustdesk:

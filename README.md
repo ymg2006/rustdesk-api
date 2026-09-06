@@ -156,6 +156,8 @@
 * 语言如果不设置默认为`zh-CN`
 
 ### 环境变量
+PostgreSQL、Redis、DragonflyDB 的详细配置和组合 Docker Compose 示例见 [Database and cache configuration](docs/database-cache.md)。
+
 环境变量和配置文件`conf/config.yaml`中的配置一一对应，变量名前缀是`RUSTDESK_API`
 下面表格并未全部列出，可以参考`conf/config.yaml`中的配置。
 

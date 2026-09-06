@@ -10,12 +10,12 @@ import (
 )
 
 type SqliteConfig struct {
-	MaxIdleConns int
-	MaxOpenConns int
+	Path string
+	PoolConfig
 }
 
-func NewSqlite(sqliteConf *SqliteConfig, logwriter logger.Writer) *gorm.DB {
-	db, err := gorm.Open(sqlite.Open("./data/rustdeskapi.db"), &gorm.Config{
+func NewSqlite(sqliteConf *SqliteConfig, logwriter logger.Writer) (*gorm.DB, error) {
+	db, err := gorm.Open(sqlite.Open(sqliteConf.Path), &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true,
 		Logger: logger.New(
 			logwriter, // io writer
@@ -29,17 +29,15 @@ func NewSqlite(sqliteConf *SqliteConfig, logwriter logger.Writer) *gorm.DB {
 		),
 	})
 	if err != nil {
-		fmt.Println(err)
+		return nil, fmt.Errorf("open SQLite database: %w", err)
 	}
-	sqlDB, err2 := db.DB()
-	if err2 != nil {
-		fmt.Println(err2)
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("get SQLite connection pool: %w", err)
 	}
-	// SetMaxIdleConns sets the maximum number of connections in the idle connection pool
-	sqlDB.SetMaxIdleConns(sqliteConf.MaxIdleConns)
-
-	// SetMaxOpenConns sets the maximum number of open database connections.
-	sqlDB.SetMaxOpenConns(sqliteConf.MaxOpenConns)
-
-	return db
+	if err := configureAndPing(sqlDB, sqliteConf.PoolConfig); err != nil {
+		_ = sqlDB.Close()
+		return nil, fmt.Errorf("validate SQLite database: %w", err)
+	}
+	return db, nil
 }

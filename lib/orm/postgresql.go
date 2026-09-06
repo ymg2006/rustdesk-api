@@ -2,19 +2,19 @@ package orm
 
 import (
 	"fmt"
+	"time"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"time"
 )
 
 type PostgresqlConfig struct {
-	Dsn          string
-	MaxIdleConns int
-	MaxOpenConns int
+	Dsn string
+	PoolConfig
 }
 
-func NewPostgresql(conf *PostgresqlConfig, logwriter logger.Writer) *gorm.DB {
+func NewPostgresql(conf *PostgresqlConfig, logwriter logger.Writer) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.Open(conf.Dsn), &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true,
 		Logger: logger.New(
@@ -29,17 +29,15 @@ func NewPostgresql(conf *PostgresqlConfig, logwriter logger.Writer) *gorm.DB {
 		),
 	})
 	if err != nil {
-		fmt.Println(err)
+		return nil, fmt.Errorf("open PostgreSQL database: %w", err)
 	}
-	sqlDB, err2 := db.DB()
-	if err2 != nil {
-		fmt.Println(err2)
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("get PostgreSQL connection pool: %w", err)
 	}
-	// SetMaxIdleConns sets the maximum number of connections in the idle connection pool
-	sqlDB.SetMaxIdleConns(conf.MaxIdleConns)
-
-	// SetMaxOpenConns sets the maximum number of open database connections.
-	sqlDB.SetMaxOpenConns(conf.MaxOpenConns)
-
-	return db
+	if err := configureAndPing(sqlDB, conf.PoolConfig); err != nil {
+		_ = sqlDB.Close()
+		return nil, fmt.Errorf("validate PostgreSQL database: %w", err)
+	}
+	return db, nil
 }

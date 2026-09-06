@@ -13,9 +13,13 @@ type RedisCache struct {
 }
 
 func RedisCacheInit(conf *redis.Options) *RedisCache {
-	c := &RedisCache{}
-	c.rdb = redis.NewClient(conf)
-	return c
+	return NewRedisWithClient(redis.NewClient(conf))
+}
+
+// NewRedisWithClient builds the cache adapter around a caller-owned client.
+// The caller remains solely responsible for closing the client.
+func NewRedisWithClient(client *redis.Client) *RedisCache {
+	return &RedisCache{rdb: client}
 }
 
 func (c *RedisCache) Get(key string, value interface{}) error {

@@ -1,94 +1,23 @@
 package cache
 
 import (
-	"fmt"
 	"github.com/go-redis/redis/v8"
-	"reflect"
 	"testing"
 )
 
-func TestRedisSet(t *testing.T) {
-	//rc := New("redis")
-	rc := RedisCacheInit(&redis.Options{
-		Addr:     "192.168.1.168:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
+func TestNewRedisWithClientReusesConfiguredClient(t *testing.T) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     "dragonfly:6379",
+		Password: "test-password",
+		DB:       1,
 	})
-	err := rc.Set("123", "ddd", 0)
-	if err != nil {
-		fmt.Println(err.Error())
-		t.Fatalf("Write failed")
-	}
-}
+	t.Cleanup(func() { _ = client.Close() })
 
-func TestRedisGet(t *testing.T) {
-	rc := RedisCacheInit(&redis.Options{
-		Addr:     "192.168.1.168:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-	err := rc.Set("123", "451156", 300)
-	if err != nil {
-		t.Fatalf("Write failed")
+	cache := NewRedisWithClient(client)
+	if cache.rdb != client {
+		t.Fatal("Redis cache did not retain the shared client")
 	}
-	res := ""
-	err = rc.Get("123", &res)
-	if err != nil {
-		t.Fatalf("Read failed")
-	}
-	fmt.Println("res", res)
-}
-
-func TestRedisGetJson(t *testing.T) {
-	rc := RedisCacheInit(&redis.Options{
-		Addr:     "192.168.1.168:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-	type r struct {
-		Aa string `json:"a"`
-		B  string `json:"c"`
-	}
-	old := &r{
-		Aa: "ab", B: "cdc",
-	}
-	err := rc.Set("1233", old, 300)
-	if err != nil {
-		t.Fatalf("Write failed")
-	}
-
-	res := &r{}
-	err2 := rc.Get("1233", res)
-	if err2 != nil {
-		t.Fatalf("Read failed")
-	}
-	if !reflect.DeepEqual(res, old) {
-		t.Fatalf("read error")
-	}
-	fmt.Println(res, res.Aa)
-}
-
-func BenchmarkRSet(b *testing.B) {
-	rc := RedisCacheInit(&redis.Options{
-		Addr:     "192.168.1.168:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		rc.Set("123", "{dsv}", 1000)
-	}
-}
-
-func BenchmarkRGet(b *testing.B) {
-	rc := RedisCacheInit(&redis.Options{
-		Addr:     "192.168.1.168:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-	b.ResetTimer()
-	v := ""
-	for i := 0; i < b.N; i++ {
-		rc.Get("123", &v)
+	if got := cache.rdb.Options().DB; got != 1 {
+		t.Fatalf("Redis logical database = %d, want 1", got)
 	}
 }

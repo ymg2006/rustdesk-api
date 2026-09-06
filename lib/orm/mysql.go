@@ -2,19 +2,19 @@ package orm
 
 import (
 	"fmt"
+	"time"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"time"
 )
 
 type MysqlConfig struct {
-	Dsn          string
-	MaxIdleConns int
-	MaxOpenConns int
+	Dsn string
+	PoolConfig
 }
 
-func NewMysql(mysqlConf *MysqlConfig, logwriter logger.Writer) *gorm.DB {
+func NewMysql(mysqlConf *MysqlConfig, logwriter logger.Writer) (*gorm.DB, error) {
 	db, err := gorm.Open(mysql.New(mysql.Config{
 		DSN:               mysqlConf.Dsn, // DSN data source name
 		DefaultStringSize: 256,           // The default length of string type fields
@@ -36,17 +36,15 @@ func NewMysql(mysqlConf *MysqlConfig, logwriter logger.Writer) *gorm.DB {
 		),
 	})
 	if err != nil {
-		fmt.Println(err)
+		return nil, fmt.Errorf("open MySQL database: %w", err)
 	}
-	sqlDB, err2 := db.DB()
-	if err2 != nil {
-		fmt.Println(err2)
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("get MySQL connection pool: %w", err)
 	}
-	// SetMaxIdleConns sets the maximum number of connections in the idle connection pool
-	sqlDB.SetMaxIdleConns(mysqlConf.MaxIdleConns)
-
-	// SetMaxOpenConns sets the maximum number of open database connections.
-	sqlDB.SetMaxOpenConns(mysqlConf.MaxOpenConns)
-
-	return db
+	if err := configureAndPing(sqlDB, mysqlConf.PoolConfig); err != nil {
+		_ = sqlDB.Close()
+		return nil, fmt.Errorf("validate MySQL database: %w", err)
+	}
+	return db, nil
 }

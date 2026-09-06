@@ -154,6 +154,8 @@ displaying data.Frontend code is available at [rustdesk-api-web](https://github.
 
 
 ### Environment Variables
+Detailed PostgreSQL, Redis, and DragonflyDB settings and a combined Docker Compose example are in [Database and cache configuration](docs/database-cache.md).
+
 The environment variables correspond one-to-one with the configurations in the `conf/config.yaml` file. The prefix for variable names is `RUSTDESK_API`.
 The table below does not list all configurations. Please refer to the configurations in `conf/config.yaml`.
 
