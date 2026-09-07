@@ -47,7 +47,7 @@ func Success(c *gin.Context, data interface{}) {
 // original message server-side for troubleshooting. Client errors such as 4xx still pass messages through.
 func Fail(c *gin.Context, code int, message string) {
 	if code >= 500 {
-		if message != "" {
+		if message != "" && global.Logger != nil {
 			// Log only on the server side; never echo it to clients.
 			global.Logger.Error("server error response suppressed for client: " + message)
 		}
@@ -76,19 +76,50 @@ type ServerConfigResponse struct {
 	ApiServer   string `json:"api_server"`
 }
 
+func getLocalizer(c *gin.Context) *i18n.Localizer {
+	if global.Localizer == nil {
+		return nil
+	}
+	lang := ""
+	if c != nil {
+		lang = c.GetHeader("Accept-Language")
+	}
+
+	return global.Localizer(lang)
+}
+
+func logLocalizationError(err error) {
+	if err != nil && global.Logger != nil {
+		global.Logger.Warn("LocalizeMessage Error: " + err.Error())
+	}
+}
+
 func TranslateMsg(c *gin.Context, messageId string) string {
-	localizer := global.Localizer(c.GetHeader("Accept-Language"))
+	localizer := getLocalizer(c)
+	if localizer == nil {
+		return messageId
+	}
+
 	errMsg, err := localizer.LocalizeMessage(&i18n.Message{
 		ID: messageId,
 	})
 	if err != nil {
-		global.Logger.Warn("LocalizeMessage Error: " + err.Error())
-		errMsg = messageId
+		logLocalizationError(err)
+		return messageId
 	}
 	return errMsg
 }
-func TranslateTempMsg(c *gin.Context, messageId string, templateData map[string]interface{}) string {
-	localizer := global.Localizer(c.GetHeader("Accept-Language"))
+
+func TranslateTempMsg(
+	c *gin.Context,
+	messageId string,
+	templateData map[string]interface{},
+) string {
+	localizer := getLocalizer(c)
+	if localizer == nil {
+		return messageId
+	}
+
 	errMsg, err := localizer.Localize(&i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID: messageId,
@@ -96,18 +127,28 @@ func TranslateTempMsg(c *gin.Context, messageId string, templateData map[string]
 		TemplateData: templateData,
 	})
 	if err != nil {
-		global.Logger.Warn("LocalizeMessage Error: " + err.Error())
-		errMsg = messageId
+		logLocalizationError(err)
+		return messageId
 	}
 	return errMsg
 }
-func TranslateParamMsg(c *gin.Context, messageId string, params ...string) string {
-	localizer := global.Localizer(c.GetHeader("Accept-Language"))
-	templateData := make(map[string]interface{})
+
+func TranslateParamMsg(
+	c *gin.Context,
+	messageId string,
+	params ...string,
+) string {
+	templateData := make(map[string]interface{}, len(params))
+
 	for i, v := range params {
 		k := fmt.Sprintf("P%d", i)
 		templateData[k] = v
 	}
+	localizer := getLocalizer(c)
+	if localizer == nil {
+		return messageId
+	}
+
 	errMsg, err := localizer.Localize(&i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID: messageId,
@@ -115,8 +156,9 @@ func TranslateParamMsg(c *gin.Context, messageId string, params ...string) strin
 		TemplateData: templateData,
 	})
 	if err != nil {
-		global.Logger.Warn("LocalizeMessage Error: " + err.Error())
-		errMsg = messageId
+		logLocalizationError(err)
+		return messageId
 	}
+
 	return errMsg
 }

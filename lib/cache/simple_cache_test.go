@@ -1,17 +1,20 @@
 package cache
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"testing"
+	"time"
 )
 
 func TestSimpleCache_Set(t *testing.T) {
 	s := NewSimpleCache()
-	err := s.Set("key", "value", 0)
+	err := s.Set(context.Background(), "key", "value", 0)
 	if err != nil {
 		t.Fatalf("Write failed")
 	}
-	err = s.Set("key", 111, 0)
+	err = s.Set(context.Background(), "key", 111, 0)
 	if err != nil {
 		t.Fatalf("Write failed")
 	}
@@ -19,36 +22,36 @@ func TestSimpleCache_Set(t *testing.T) {
 
 func TestSimpleCache_Get(t *testing.T) {
 	s := NewSimpleCache()
-	err := s.Set("key", "value", 0)
+	err := s.Set(context.Background(), "key", "value", 0)
 	value := ""
-	err = s.Get("key", &value)
+	err = s.Get(context.Background(), "key", &value)
 	fmt.Println("value", value)
 	if err != nil {
 		t.Fatalf("Read failed")
 	}
 
-	err = s.Set("key1", 11, 0)
+	err = s.Set(context.Background(), "key1", 11, 0)
 	value1 := 0
-	err = s.Get("key1", &value1)
+	err = s.Get(context.Background(), "key1", &value1)
 	fmt.Println("value1", value1)
 	if err != nil {
 		t.Fatalf("Read failed")
 	}
 
-	err = s.Set("key2", []byte{'a', 'b'}, 0)
+	err = s.Set(context.Background(), "key2", []byte{'a', 'b'}, 0)
 	value2 := []byte{}
-	err = s.Get("key2", &value2)
+	err = s.Get(context.Background(), "key2", &value2)
 	fmt.Println("value2", string(value2))
 	if err != nil {
 		t.Fatalf("Read failed")
 	}
 
-	err = s.Set("key3", 33.33, 0)
+	err = s.Set(context.Background(), "key3", 33.33, 0)
 	var value3 int
-	err = s.Get("key3", &value3)
+	err = s.Get(context.Background(), "key3", &value3)
 	fmt.Println("value3", value3)
-	if err != nil {
-		t.Fatalf("Read failed")
+	if !errors.Is(err, ErrCacheMiss) {
+		t.Fatalf("type-mismatched read error = %v, want ErrCacheMiss", err)
 	}
 
 }
@@ -78,13 +81,13 @@ func TestSimpleCache_GetStruct(t *testing.T) {
 		A: "ab", B: "cdc",
 		R: old_rr,
 	}
-	err := s.Set("key", old, 300)
+	err := s.Set(context.Background(), "key", old, 300*time.Second)
 	if err != nil {
 		t.Fatalf("Write failed")
 	}
 
 	res := &r{}
-	err2 := s.Get("key", res)
+	err2 := s.Get(context.Background(), "key", res)
 	fmt.Println("res", res)
 	if err2 != nil {
 		t.Fatalf("Read failed" + err2.Error())
@@ -96,7 +99,7 @@ func TestSimpleCache_GetStruct(t *testing.T) {
 	old_rr.AA = "aaa"
 	fmt.Println("old", old)
 	res2 := &r{}
-	err3 := s.Get("key", res2)
+	err3 := s.Get(context.Background(), "key", res2)
 	fmt.Println("res2", res2, res2.R.AA, res2.R.BB)
 	if err3 != nil {
 		t.Fatalf("Read failed" + err3.Error())

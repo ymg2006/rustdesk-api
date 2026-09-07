@@ -215,12 +215,15 @@ func bindEnvironment(v *viper.Viper) error {
 // that would otherwise fail later or silently select a different backend.
 func (c *Config) NormalizeAndValidate() error {
 	c.Cache.Type = strings.ToLower(strings.TrimSpace(c.Cache.Type))
+	if c.Cache.Type == "disabled" {
+		c.Cache.Type = "none"
+	}
 	switch c.Cache.Type {
 	case "file":
 		if strings.TrimSpace(c.Cache.FileDir) == "" {
 			return fmt.Errorf("cache.file-dir must not be empty for file cache")
 		}
-	case "memory", "redis":
+	case "memory", "redis", "none":
 	default:
 		return fmt.Errorf("unsupported cache type: %s", c.Cache.Type)
 	}

@@ -5,15 +5,15 @@ import (
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	"github.com/go-redis/redis/v8"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"github.com/ymg2006/rustdesk-api/v2/config"
 	"github.com/ymg2006/rustdesk-api/v2/lib/cache"
 	"github.com/ymg2006/rustdesk-api/v2/lib/jwt"
 	"github.com/ymg2006/rustdesk-api/v2/lib/lock"
 	"github.com/ymg2006/rustdesk-api/v2/lib/upload"
 	"github.com/ymg2006/rustdesk-api/v2/utils"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
@@ -24,7 +24,7 @@ var (
 	Config     config.Config
 	Viper      *viper.Viper
 	Redis      *redis.Client
-	Cache      cache.Handler
+	Cache      cache.Cache
 	Validator  struct {
 		Validate    *validator.Validate
 		UT          *ut.UniversalTranslator

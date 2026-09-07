@@ -1,14 +1,16 @@
 package cache
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestFileSet(t *testing.T) {
 	fc := NewFileCache()
-	err := fc.Set("123", "ddd", 0)
+	err := fc.Set(context.Background(), "123", "ddd", 0)
 	if err != nil {
 		fmt.Println(err.Error())
 		t.Fatalf("Write failed")
@@ -18,7 +20,7 @@ func TestFileSet(t *testing.T) {
 func TestFileGet(t *testing.T) {
 	fc := NewFileCache()
 	res := ""
-	err := fc.Get("123", &res)
+	err := fc.Get(context.Background(), "123", &res)
 	if err != nil {
 		fmt.Println(err.Error())
 		t.Fatalf("Read failed")
@@ -27,9 +29,9 @@ func TestFileGet(t *testing.T) {
 }
 func TestFileSetGet(t *testing.T) {
 	fc := NewFileCache()
-	err := fc.Set("key1", "ddd", 0)
+	err := fc.Set(context.Background(), "key1", "ddd", 0)
 	res := ""
-	err = fc.Get("key1", &res)
+	err = fc.Get(context.Background(), "key1", &res)
 	if err != nil {
 		fmt.Println(err.Error())
 		t.Fatalf("Read failed")
@@ -41,9 +43,9 @@ func TestFileGetJson(t *testing.T) {
 	old := &r{
 		A: "a", B: "b",
 	}
-	fc.Set("123", old, 0)
+	fc.Set(context.Background(), "123", old, 0)
 	res := &r{}
-	err2 := fc.Get("123", res)
+	err2 := fc.Get(context.Background(), "123", res)
 	fmt.Println("res", res)
 	if err2 != nil {
 		t.Fatalf("Read failed" + err2.Error())
@@ -57,7 +59,7 @@ func TestFileSetGetJson(t *testing.T) {
 		A: "a", B: "b",
 		R: old_rr,
 	}
-	err := fc.Set("123", old, 300)
+	err := fc.Set(context.Background(), "123", old, 300*time.Second)
 	if err != nil {
 		t.Fatalf("Write failed")
 	}
@@ -65,7 +67,7 @@ func TestFileSetGetJson(t *testing.T) {
 	fmt.Println("old_rr", old)
 
 	res := &r{}
-	err2 := fc.Get("123", res)
+	err2 := fc.Get(context.Background(), "123", res)
 	fmt.Println("res", res)
 	if err2 != nil {
 		t.Fatalf("Read failed" + err2.Error())
@@ -80,7 +82,7 @@ func BenchmarkSet(b *testing.B) {
 	fc := NewFileCache()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		fc.Set("123", "{dsv}", 1000)
+		fc.Set(context.Background(), "123", "{dsv}", 1000*time.Second)
 	}
 }
 
@@ -89,6 +91,6 @@ func BenchmarkGet(b *testing.B) {
 	b.ResetTimer()
 	v := ""
 	for i := 0; i < b.N; i++ {
-		fc.Get("123", &v)
+		fc.Get(context.Background(), "123", &v)
 	}
 }

@@ -78,6 +78,14 @@ func TestLoadYAMLCacheConfiguration(t *testing.T) {
 	}
 }
 
+func TestDisabledCacheUsesNoopBackend(t *testing.T) {
+	clearConfigEnvironment(t)
+	cfg := loadTestConfig(t, "cache:\n  type: disabled\n")
+	if cfg.Cache.Type != "none" {
+		t.Fatalf("disabled cache type normalized to %q, want none", cfg.Cache.Type)
+	}
+}
+
 func TestLoadEnvironmentOnlyRedisConfiguration(t *testing.T) {
 	clearConfigEnvironment(t)
 	t.Setenv("RUSTDESK_API_CACHE_TYPE", "redis")

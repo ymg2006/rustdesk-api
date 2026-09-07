@@ -1,9 +1,11 @@
 package cache
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestSimpleCache(t *testing.T) {
@@ -38,7 +40,7 @@ func TestSimpleCache(t *testing.T) {
 
 func TestFileCacheSet(t *testing.T) {
 	fc := New("file")
-	err := fc.Set("123", "ddd", 0)
+	err := fc.Set(context.Background(), "123", "ddd", 0)
 	if err != nil {
 		fmt.Println(err.Error())
 		t.Fatalf("Write failed")
@@ -47,12 +49,12 @@ func TestFileCacheSet(t *testing.T) {
 
 func TestFileCacheGet(t *testing.T) {
 	fc := New("file")
-	err := fc.Set("123", "45156", 300)
+	err := fc.Set(context.Background(), "123", "45156", 300*time.Second)
 	if err != nil {
 		t.Fatalf("Write failed")
 	}
 	res := ""
-	err = fc.Get("123", &res)
+	err = fc.Get(context.Background(), "123", &res)
 	if err != nil {
 		t.Fatalf("Read failed")
 	}

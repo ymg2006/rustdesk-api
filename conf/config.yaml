@@ -62,7 +62,7 @@ postgresql:
 
 # Application cache. File cache remains the default; Redis/Dragonfly is only required when type=redis.
 cache:
-  type: "file" # Supported values: file, memory, redis
+  type: "file" # Supported values: file, memory, redis, none (disabled)
   file-dir: "./runtime/cache"
   redis-addr: "127.0.0.1:6379"
   redis-pwd: ""

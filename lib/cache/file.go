@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
@@ -39,8 +40,9 @@ func (c *FileCache) fileName(key string) string {
 	return f
 }
 
-// getValue reads the disk value; returns an empty string when the file does not exist/has expired/is damaged (filter error)
-func (c *FileCache) getValue(key string) string {
+// getValue reads the disk value and reports missing, expired, or damaged
+// entries as cache misses.
+func (c *FileCache) getValue(key string) (string, error) {
 	f := c.fileName(key)
 	lock := c.getLock(f)
 	lock.Lock()
@@ -48,41 +50,47 @@ func (c *FileCache) getValue(key string) string {
 
 	data, err := os.ReadFile(f)
 	if err != nil {
-		return ""
+		if os.IsNotExist(err) {
+			return "", ErrCacheMiss
+		}
+		return "", err
 	}
 	var item fileItem
 	if err := json.Unmarshal(data, &item); err != nil {
 		// The file is damaged (including old format) and will be considered a miss after deletion.
 		os.Remove(f)
-		return ""
+		return "", ErrCacheMiss
 	}
 	if item.Exp > 0 && time.Now().Unix() >= item.Exp {
 		os.Remove(f)
-		return ""
+		return "", ErrCacheMiss
 	}
-	return item.Data
+	return item.Data, nil
 }
 
-// Get reads the cache; value remains zero on a miss and no error is returned (consistent with SimpleCache behavior)
-func (c *FileCache) Get(key string, value interface{}) error {
-	data := c.getValue(key)
-	if data == "" {
-		return nil
+// Get reads and decodes a cache entry.
+func (c *FileCache) Get(ctx context.Context, key string, value interface{}) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	data, err := c.getValue(key)
+	if err != nil {
+		return err
 	}
 	return DecodeValue(data, value)
 }
 
-func (c *FileCache) saveValue(key string, value string, exp int) error {
+func (c *FileCache) saveValue(key string, value string, ttl time.Duration) error {
 	f := c.fileName(key)
 	lock := c.getLock(f)
 	lock.Lock()
 	defer lock.Unlock()
 
-	if exp <= 0 {
-		exp = MaxTimeOut
+	if ttl <= 0 {
+		ttl = time.Duration(MaxTimeOut) * time.Second
 	}
 	item := fileItem{
-		Exp:  time.Now().Add(time.Duration(exp) * time.Second).Unix(),
+		Exp:  time.Now().Add(ttl).Unix(),
 		Data: value,
 	}
 	b, err := json.Marshal(item)
@@ -92,12 +100,29 @@ func (c *FileCache) saveValue(key string, value string, exp int) error {
 	return os.WriteFile(f, b, 0644)
 }
 
-func (c *FileCache) Set(key string, value interface{}, exp int) error {
+func (c *FileCache) Set(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	str, err := EncodeValue(value)
 	if err != nil {
 		return err
 	}
-	return c.saveValue(key, str, exp)
+	return c.saveValue(key, str, ttl)
+}
+
+func (c *FileCache) Delete(ctx context.Context, key string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	f := c.fileName(key)
+	lock := c.getLock(f)
+	lock.Lock()
+	defer lock.Unlock()
+	if err := os.Remove(f); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
 }
 
 func (c *FileCache) SetDir(path string) {

@@ -3,6 +3,7 @@ package cache
 import (
 	"container/heap"
 	"container/list"
+	"context"
 	"errors"
 	"reflect"
 	"sync"
@@ -58,7 +59,10 @@ func (pq *PriorityQueue) Pop() interface{} {
 	return item
 }
 
-func (m *MemoryCache) Get(key string, value interface{}) error {
+func (m *MemoryCache) Get(ctx context.Context, key string, value interface{}) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	// Use reflection to set the stored value into the passed pointer variable
 	val := reflect.ValueOf(value)
 	if val.Kind() != reflect.Ptr {
@@ -71,13 +75,13 @@ func (m *MemoryCache) Get(key string, value interface{}) error {
 	defer m.mu.Unlock()
 
 	if m.data == nil {
-		return nil
+		return ErrCacheMiss
 	}
 
 	if item, ok := m.data[key]; ok {
 		if item.Expiration < time.Now().UnixNano() {
 			m.deleteItem(item)
-			return nil
+			return ErrCacheMiss
 		}
 		//Move to the end of the queue
 		m.ll.MoveToBack(item.ListEle)
@@ -86,11 +90,15 @@ func (m *MemoryCache) Get(key string, value interface{}) error {
 		if err != nil {
 			return err
 		}
+		return nil
 	}
-	return nil
+	return ErrCacheMiss
 }
 
-func (m *MemoryCache) Set(key string, value interface{}, exp int) error {
+func (m *MemoryCache) Set(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -106,16 +114,13 @@ func (m *MemoryCache) Set(key string, value interface{}, exp int) error {
 	if m.maxBytes != 0 && m.maxBytes < keyBytes+valueBytes {
 		return errors.New("exceed maxBytes")
 	}
-	m.usedBytes += keyBytes + valueBytes
-	if m.maxBytes != 0 && m.usedBytes > m.maxBytes {
-		m.RemoveOldest()
+	if ttl <= 0 {
+		ttl = time.Duration(MaxTimeOut) * time.Second
 	}
-	if exp <= 0 {
-		exp = MaxTimeOut
-	}
-	expiration := time.Now().Add(time.Duration(exp) * time.Second).UnixNano()
+	expiration := time.Now().Add(ttl).UnixNano()
 	item, exists := m.data[key]
 	if exists {
+		m.usedBytes -= int64(len(item.Key)) + int64(len(item.Value))
 		item.Value = v
 		item.Expiration = expiration
 		heap.Fix(&m.pq, item.Index)
@@ -131,7 +136,21 @@ func (m *MemoryCache) Set(key string, value interface{}, exp int) error {
 		m.data[key] = item
 		heap.Push(&m.pq, item)
 	}
+	m.usedBytes += keyBytes + valueBytes
+	m.RemoveOldest()
 
+	return nil
+}
+
+func (m *MemoryCache) Delete(ctx context.Context, key string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if item, ok := m.data[key]; ok {
+		m.deleteItem(item)
+	}
 	return nil
 }
 

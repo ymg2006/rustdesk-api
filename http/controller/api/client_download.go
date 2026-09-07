@@ -10,7 +10,11 @@ type ClientDownload struct{}
 
 // List Gets the enabled client download list (public)
 func (v *ClientDownload) List(c *gin.Context) {
-	list := service.AllService.ClientDownloadService.ActiveList()
+	list, err := service.AllService.ClientDownloadService.ActiveListWithError()
+	if err != nil {
+		response.ServerError(c)
+		return
+	}
 	response.Success(c, gin.H{
 		"list": list,
 	})

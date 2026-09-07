@@ -13,7 +13,33 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/ymg2006/rustdesk-api/v2/config"
 	"github.com/ymg2006/rustdesk-api/v2/global"
+	"github.com/ymg2006/rustdesk-api/v2/lib/cache"
 )
+
+func TestInitializeRedisCacheFailureDisablesCache(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := listener.Addr().String()
+	_ = listener.Close()
+
+	global.Logger = logrus.New()
+	global.Redis = nil
+	global.Cache = nil
+	cfg := &config.Config{Cache: config.Cache{
+		Type: cache.TypeRedis, RedisAddr: addr, ConnectTimeout: 50 * time.Millisecond,
+	}}
+	if err := initializeCache(cfg); err != nil {
+		t.Fatalf("cache outage must not fail startup: %v", err)
+	}
+	if global.Redis != nil {
+		t.Fatal("failed Redis initialization must not retain a Redis client")
+	}
+	if _, ok := global.Cache.(*cache.NoopCache); !ok {
+		t.Fatalf("failed Redis initialization cache = %T, want *cache.NoopCache", global.Cache)
+	}
+}
 
 func TestInitializeRedisCachePingsAndSelectsConfiguredDatabase(t *testing.T) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")

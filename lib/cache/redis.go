@@ -2,11 +2,10 @@ package cache
 
 import (
 	"context"
+	"errors"
 	"github.com/go-redis/redis/v8"
 	"time"
 )
-
-var ctx = context.Background()
 
 type RedisCache struct {
 	rdb *redis.Client
@@ -22,29 +21,31 @@ func NewRedisWithClient(client *redis.Client) *RedisCache {
 	return &RedisCache{rdb: client}
 }
 
-func (c *RedisCache) Get(key string, value interface{}) error {
+func (c *RedisCache) Get(ctx context.Context, key string, value interface{}) error {
 	data, err := c.rdb.Get(ctx, key).Result()
 	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return ErrCacheMiss
+		}
 		return err
 	}
-	err1 := DecodeValue(data, value)
-	return err1
+	return DecodeValue(data, value)
 }
 
-func (c *RedisCache) Set(key string, value interface{}, exp int) error {
+func (c *RedisCache) Set(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
 	str, err := EncodeValue(value)
 	if err != nil {
 		return err
 	}
-	if exp <= 0 {
-		exp = MaxTimeOut
+	if ttl <= 0 {
+		ttl = time.Duration(MaxTimeOut) * time.Second
 	}
-	_, err1 := c.rdb.Set(ctx, key, str, time.Duration(exp)*time.Second).Result()
+	_, err1 := c.rdb.Set(ctx, key, str, ttl).Result()
 	return err1
 }
 
-func (c *RedisCache) Gc() error {
-	return nil
+func (c *RedisCache) Delete(ctx context.Context, key string) error {
+	return c.rdb.Del(ctx, key).Err()
 }
 
 func NewRedis(conf *redis.Options) *RedisCache {

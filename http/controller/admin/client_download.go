@@ -1,6 +1,8 @@
 package admin
 
 import (
+	"errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/ymg2006/rustdesk-api/v2/http/response"
 	"github.com/ymg2006/rustdesk-api/v2/model"
@@ -25,7 +27,11 @@ func (v *ClientDownload) List(c *gin.Context) {
 			pageSize = ps
 		}
 	}
-	list, total := service.AllService.ClientDownloadService.List(uint(page), uint(pageSize))
+	list, total, err := service.AllService.ClientDownloadService.ListWithError(uint(page), uint(pageSize))
+	if err != nil {
+		response.ServerError(c)
+		return
+	}
 	response.Success(c, gin.H{
 		"list":  list,
 		"total": total,
@@ -44,7 +50,10 @@ func (v *ClientDownload) Create(c *gin.Context) {
 		return
 	}
 	item.Status = int(model.COMMON_STATUS_ENABLE)
-	service.AllService.ClientDownloadService.Create(item)
+	if err := service.AllService.ClientDownloadService.Create(item); err != nil {
+		response.ServerError(c)
+		return
+	}
 	response.Success(c, nil)
 }
 
@@ -59,7 +68,14 @@ func (v *ClientDownload) Update(c *gin.Context) {
 		response.Fail(c, 101, response.TranslateMsg(c, "IdRequired"))
 		return
 	}
-	service.AllService.ClientDownloadService.Update(item)
+	if err := service.AllService.ClientDownloadService.Update(item); err != nil {
+		if errors.Is(err, service.ErrClientDownloadNotFound) {
+			response.Fail(c, 101, response.TranslateMsg(c, "RecordNotFound"))
+		} else {
+			response.ServerError(c)
+		}
+		return
+	}
 	response.Success(c, nil)
 }
 
@@ -72,7 +88,14 @@ func (v *ClientDownload) Delete(c *gin.Context) {
 		response.Fail(c, 101, response.TranslateMsg(c, "IdRequired"))
 		return
 	}
-	service.AllService.ClientDownloadService.Delete(form.Id)
+	if err := service.AllService.ClientDownloadService.Delete(form.Id); err != nil {
+		if errors.Is(err, service.ErrClientDownloadNotFound) {
+			response.Fail(c, 101, response.TranslateMsg(c, "RecordNotFound"))
+		} else {
+			response.ServerError(c)
+		}
+		return
+	}
 	response.Success(c, nil)
 }
 
@@ -86,12 +109,23 @@ func (v *ClientDownload) SetEnable(c *gin.Context) {
 		response.Fail(c, 101, response.TranslateMsg(c, "IdRequired"))
 		return
 	}
-	item := service.AllService.ClientDownloadService.FindById(form.Id)
-	if item == nil || item.Id == 0 {
+	item, err := service.AllService.ClientDownloadService.FindByIdWithError(form.Id)
+	if errors.Is(err, service.ErrClientDownloadNotFound) {
 		response.Fail(c, 101, response.TranslateMsg(c, "RecordNotFound"))
 		return
 	}
+	if err != nil {
+		response.ServerError(c)
+		return
+	}
 	item.Status = form.Status
-	service.AllService.ClientDownloadService.Update(item)
+	if err := service.AllService.ClientDownloadService.Update(item); err != nil {
+		if errors.Is(err, service.ErrClientDownloadNotFound) {
+			response.Fail(c, 101, response.TranslateMsg(c, "RecordNotFound"))
+		} else {
+			response.ServerError(c)
+		}
+		return
+	}
 	response.Success(c, nil)
 }

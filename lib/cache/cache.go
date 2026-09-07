@@ -1,14 +1,23 @@
 package cache
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"reflect"
+	"time"
 )
 
-type Handler interface {
-	Get(key string, value interface{}) error
-	Set(key string, value interface{}, exp int) error
-	Gc() error
+var ErrCacheMiss = errors.New("cache: key not found")
+
+type Cache interface {
+	Get(ctx context.Context, key string, dest interface{}) error
+	Set(ctx context.Context, key string, value interface{}, ttl time.Duration) error
+	Delete(ctx context.Context, key string) error
 }
+
+// Handler is retained as an alias for source compatibility with older callers.
+type Handler = Cache
 
 // MaxTimeOut maximum timeout time
 
@@ -16,20 +25,25 @@ const (
 	TypeMem    = "memory"
 	TypeRedis  = "redis"
 	TypeFile   = "file"
+	TypeNone   = "none"
 	MaxTimeOut = 365 * 24 * 3600
 )
 
-func New(typ string) Handler {
-	var cache Handler
+func New(typ string) Cache {
+	var cache Cache
 	switch typ {
 	case TypeFile:
 		cache = NewFileCache()
 	case TypeRedis:
-		cache = new(RedisCache)
+		// Redis requires connection options or a configured client. The generic
+		// constructor must remain safe, so callers use NewRedis instead.
+		cache = NewNoopCache()
 	case TypeMem: // memory
 		cache = NewMemoryCache(0)
+	case TypeNone:
+		cache = NewNoopCache()
 	default:
-		cache = NewMemoryCache(0)
+		cache = NewNoopCache()
 	}
 	return cache
 }
@@ -49,23 +63,16 @@ func EncodeValue(value interface{}) (string, error) {
 }
 
 func DecodeValue(value string, rtv interface{}) error {
-	//Determine whether the type of rtv is string. If it is string, assign it directly and return it.
-	/*switch rtv.(type) {
-	case *string:
-		*(rtv.(*string)) = value
-		return nil
-	case *[]byte:
-		*(rtv.(*[]byte)) = []byte(value)
-		return nil
-	//struct
-	case *interface{}:
-		err := json.Unmarshal(([]byte)(value), rtv)
-		return err
-	default:
-		err := json.Unmarshal(([]byte)(value), rtv)
+	dest := reflect.ValueOf(rtv)
+	if dest.Kind() != reflect.Ptr || dest.IsNil() {
+		return errors.New("cache: destination must be a non-nil pointer")
+	}
+	// Decode atomically so malformed cache data cannot partially mutate a
+	// destination that the caller will reuse for its database fallback.
+	tmp := reflect.New(dest.Elem().Type())
+	if err := json.Unmarshal([]byte(value), tmp.Interface()); err != nil {
 		return err
 	}
-	*/
-	err := json.Unmarshal(([]byte)(value), rtv)
-	return err
+	dest.Elem().Set(tmp.Elem())
+	return nil
 }

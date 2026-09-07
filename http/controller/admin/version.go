@@ -1,6 +1,8 @@
 package admin
 
 import (
+	"errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/ymg2006/rustdesk-api/v2/http/response"
 	"github.com/ymg2006/rustdesk-api/v2/model"
@@ -25,7 +27,11 @@ func (v *Version) List(c *gin.Context) {
 			pageSize = ps
 		}
 	}
-	list, total := service.AllService.AppReleaseService.List(uint(page), uint(pageSize))
+	list, total, err := service.AllService.AppReleaseService.ListWithError(uint(page), uint(pageSize))
+	if err != nil {
+		response.ServerError(c)
+		return
+	}
 	response.Success(c, gin.H{
 		"list":  list,
 		"total": total,
@@ -54,7 +60,7 @@ func (v *Version) Create(c *gin.Context) {
 		ver.Status = int(model.COMMON_STATUS_ENABLE)
 	}
 	if err := service.AllService.AppReleaseService.Create(ver); err != nil {
-		response.Fail(c, 101, response.TranslateMsg(c, "SaveFailed")+err.Error())
+		response.ServerError(c)
 		return
 	}
 	response.Success(c, nil)
@@ -70,7 +76,14 @@ func (v *Version) Update(c *gin.Context) {
 		response.Fail(c, 101, response.TranslateMsg(c, "IdRequired"))
 		return
 	}
-	service.AllService.AppReleaseService.Update(ver)
+	if err := service.AllService.AppReleaseService.Update(ver); err != nil {
+		if errors.Is(err, service.ErrAppReleaseNotFound) {
+			response.Fail(c, 101, response.TranslateMsg(c, "VersionNotFound"))
+		} else {
+			response.ServerError(c)
+		}
+		return
+	}
 	response.Success(c, nil)
 }
 
@@ -82,7 +95,14 @@ func (v *Version) Delete(c *gin.Context) {
 		response.Fail(c, 101, response.TranslateMsg(c, "IdRequired"))
 		return
 	}
-	service.AllService.AppReleaseService.Delete(form.Id)
+	if err := service.AllService.AppReleaseService.Delete(form.Id); err != nil {
+		if errors.Is(err, service.ErrAppReleaseNotFound) {
+			response.Fail(c, 101, response.TranslateMsg(c, "VersionNotFound"))
+		} else {
+			response.ServerError(c)
+		}
+		return
+	}
 	response.Success(c, nil)
 }
 
@@ -95,13 +115,24 @@ func (v *Version) SetEnable(c *gin.Context) {
 		response.Fail(c, 101, response.TranslateMsg(c, "IdRequired"))
 		return
 	}
-	ver := service.AllService.AppReleaseService.FindById(form.Id)
-	if ver == nil || ver.Id == 0 {
+	ver, err := service.AllService.AppReleaseService.FindByIdWithError(form.Id)
+	if errors.Is(err, service.ErrAppReleaseNotFound) {
 		response.Fail(c, 101, response.TranslateMsg(c, "VersionNotFound"))
 		return
 	}
+	if err != nil {
+		response.ServerError(c)
+		return
+	}
 	ver.Status = form.Status
-	service.AllService.AppReleaseService.Update(ver)
+	if err := service.AllService.AppReleaseService.Update(ver); err != nil {
+		if errors.Is(err, service.ErrAppReleaseNotFound) {
+			response.Fail(c, 101, response.TranslateMsg(c, "VersionNotFound"))
+		} else {
+			response.ServerError(c)
+		}
+		return
+	}
 	response.Success(c, nil)
 }
 

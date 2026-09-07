@@ -26,7 +26,9 @@ func parseNotifiedPeers(data string) map[string]*peerNotifyRecord {
 	m := make(map[string]*peerNotifyRecord)
 	if err := json.Unmarshal([]byte(data), &m); err == nil {
 		for k, v := range m {
-			result[k] = v
+			if v != nil {
+				result[k] = v
+			}
 		}
 		return result
 	}
@@ -208,35 +210,51 @@ func (s *AlertService) checkOfflineDevices() {
 		}
 		var candidates []candidate
 		for _, peer := range peers {
-			rec, ok := notifiedMap[peer.Id]
-			if !ok {
+			rec, tracked := notifiedMap[peer.Id]
+			if !tracked || rec == nil {
 				rec = &peerNotifyRecord{}
+				tracked = false
 			}
-			// Daily weight reset
+			// Daily weight reset.
 			if rec.WeightDay != today {
 				rec.Weight = 0
 				rec.WeightDay = today
 			}
 			switch {
 			case peer.LastOnlineTime > now-300:
-				// Already online: Reset weights
+				// Device is online again. Reset its offline accumulation.
 				rec.Weight = 0
 				rec.WeightDay = today
+
 			case peer.LastOnlineTime < now-threshold:
-				// Offline (exceeds threshold time): Weight +1
-				// If the device is offline before the alarm is created, this offline event will be skipped (the history will not be traced).
-				if cfg.CreatedAt > 0 && peer.LastOnlineTime < cfg.CreatedAt {
+				// The device has exceeded the configured offline threshold.
+				//
+				// If the alert rule was created after the device had already gone
+				// offline, do not backfill historical weight. Skip only the first
+				// observation and persist an empty record as the baseline.
+				//
+				// On subsequent checker cycles the record exists, so the device is
+				// monitored prospectively and its weight starts accumulating even
+				// if it has not reconnected in the meantime.
+				if cfg.CreatedAt > 0 &&
+					peer.LastOnlineTime < cfg.CreatedAt &&
+					!tracked {
 					break
 				}
 				rec.Weight++
 			default:
-				// Just offline but not yet exceeded the threshold: not counted in the weight
+				// Offline, but not long enough to satisfy OfflineMin yet.
 				rec.Weight = 0
 				rec.WeightDay = today
 			}
+
 			notifiedMap[peer.Id] = rec
+
 			if rec.Weight >= offlineWeightThreshold {
-				candidates = append(candidates, candidate{peer: peer, weight: rec.Weight})
+				candidates = append(candidates, candidate{
+					peer:   peer,
+					weight: rec.Weight,
+				})
 			}
 		}
 
@@ -306,7 +324,7 @@ func (s *AlertService) checkOfflineDevices() {
 		// Clean up records that are not today (based on the date the weight belongs to) to avoid unlimited growth of the map.
 		// At the same time, records of offline devices that are still accumulating weights on that day are retained.
 		for k, v := range notifiedMap {
-			if v.WeightDay != today {
+			if v == nil || v.WeightDay != today {
 				delete(notifiedMap, k)
 			}
 		}

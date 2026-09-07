@@ -190,9 +190,13 @@ func InitGlobal() error {
 	if err := DatabaseAutoUpdate(); err != nil {
 		return err
 	}
+	// Role migration requires the users table. Run it only after the schema has
+	// been created/upgraded so clean PostgreSQL databases do not emit 42P01.
+	service.AllService.MigrateUserRoles()
 	if err := initializeCache(&global.Config); err != nil {
 		return err
 	}
+	service.SetCache(global.Cache)
 	service.AllService.AlertService.StartChecker()
 
 	global.LoginLimiter = utils.NewLoginLimiter(utils.SecurityPolicy{
@@ -287,6 +291,11 @@ func buildPostgresqlDSN(cfg config.Postgresql, timeout time.Duration) string {
 
 func initializeCache(cfg *config.Config) error {
 	switch cfg.Cache.Type {
+	case cache.TypeNone:
+		global.Redis = nil
+		global.Cache = cache.NewNoopCache()
+		global.Logger.Info("Application cache disabled")
+		return nil
 	case cache.TypeFile:
 		if err := os.MkdirAll(cfg.Cache.FileDir, 0755); err != nil {
 			return fmt.Errorf("initialize file cache directory %s: %w", cfg.Cache.FileDir, err)
@@ -313,7 +322,10 @@ func initializeCache(cfg *config.Config) error {
 		defer cancel()
 		if err := client.Ping(ctx).Err(); err != nil {
 			_ = client.Close()
-			return fmt.Errorf("failed to connect to Redis cache addr=%s db=%d: %s", cfg.Cache.RedisAddr, cfg.Cache.RedisDb, redactSecret(err, cfg.Cache.RedisPwd))
+			global.Redis = nil
+			global.Cache = cache.NewNoopCache()
+			global.Logger.Warnf("Redis cache unavailable; continuing without application cache: addr=%s db=%d error=%s", cfg.Cache.RedisAddr, cfg.Cache.RedisDb, redactSecret(err, cfg.Cache.RedisPwd))
+			return nil
 		}
 		global.Redis = client
 		global.Cache = cache.NewRedisWithClient(client)
@@ -337,6 +349,7 @@ func redactSecret(err error, secret string) string {
 
 // CloseGlobal owns shutdown of the shared SQL and Redis connection pools.
 func CloseGlobal() {
+	service.SetCache(nil)
 	if closer, ok := global.Cache.(interface{ Close() error }); ok {
 		_ = closer.Close()
 	}
@@ -705,6 +718,7 @@ func Migrate(version uint) error {
 		admin := &model.User{
 			Username: "admin",
 			Nickname: "Admin",
+			Role:     "admin",
 			Status:   model.COMMON_STATUS_ENABLE,
 			IsAdmin:  &is_admin,
 			GroupId:  1,
